@@ -1,10 +1,11 @@
 package control;
 
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.SocketException;
+import java.io.PrintStream;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Implementation of server.
@@ -14,54 +15,41 @@ import java.net.SocketException;
  */
 public class Server {
 
-    public static final byte TAMANHO_MAX = 100; // TODO
+    private int porta;
+    private List<Socket> clientes;
 
-    public static final short PORT = 2020;
+    public Server(int porta) {
+        this.porta = porta;
+        this.clientes = new ArrayList<>();
+    }
 
-    /**
-     * Main method.
-     *
-     * @param args Command line arguments (ignored).
-     */
-    public static void main(final String[] args) {
-        DatagramSocket socket;
-        byte[] dado;
-        while (true) {
-            try {
-                socket = new DatagramSocket(PORT); // criação do endpoint na porta 2020
-                dado = new byte[TAMANHO_MAX];
-                DatagramPacket pacoteRecebido = new DatagramPacket(dado, dado.length);
-                try {
-                    socket.receive(pacoteRecebido);
-                } catch (final IOException ex) {
-                    System.out.println("[Server ERROR] " + ex);
-                }
-                ProxyConsumidor pc = new ProxyConsumidor(pacoteRecebido.getAddress(), pacoteRecebido.getPort());
-                pc.run();
-            } catch (final SocketException ex) {
-                System.out.println("[Server ERROR] " + ex);
+    public void executa() throws IOException {
+        try (ServerSocket servidor = new ServerSocket(this.porta)) {
+            System.out.println("Porta 12345 aberta!");
+
+            while (true) {
+                Socket cliente = servidor.accept();
+                System.out.println("Nova conexão com o cliente "
+                        + cliente.getInetAddress().getHostAddress());
+
+                this.clientes.add(cliente);
+
+                TratadorDeMensagemDoCliente tc = new TratadorDeMensagemDoCliente(cliente, this);
+                new Thread(tc).start();
             }
         }
     }
 
-    private String processReceivePackage(final DatagramPacket pacoteRecebido) {
-        // recuperação de uma cadeia de caracteres a partir da cadeia de bytes
-        String valor = new String(pacoteRecebido.getData());
-        // transformação do String em valor inteiro
-        int valorInteiro = Integer.parseInt(valor.trim());
-        // transformação de valor inteiro para String
-        return String.valueOf(valorInteiro);
-    }
-
-    private static class ProxyConsumidor implements Runnable {
-
-        private ProxyConsumidor(final InetAddress address, final int port) {
-            // TODO
-        }
-
-        @Override
-        public void run() {
-            // TODO
+    public void distribuiMensagem(Socket clienteQueEnviou, String msg) {
+        for (Socket cliente : this.clientes) {
+            if (!cliente.equals(clienteQueEnviou)) {
+                try {
+                    PrintStream ps = new PrintStream(cliente.getOutputStream());
+                    ps.println(msg);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 
