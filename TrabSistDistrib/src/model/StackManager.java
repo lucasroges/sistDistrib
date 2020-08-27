@@ -10,7 +10,7 @@ import java.util.Stack;
  */
 public class StackManager {
 
-    private static final byte MAX = 8;
+    private static final byte MAX = 15;
     private final Stack<Short> stack = new Stack<>();
 
     /**

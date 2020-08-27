@@ -39,32 +39,32 @@ public class Client {
         // TODO: ver slide 23
         int valorInteiro = 0;
         int somatorio = 0;
-        System.out.println("executando client (consumidor)");
+        System.out.println("[Client] executando client (consumidor)");
         while (true) {
             Message msg = new Message("POP", (short) 0);
             try (Socket client = new Socket(host, port);
                     ObjectOutputStream objectOut = new ObjectOutputStream(client.getOutputStream());
                     ObjectInputStream objectIn = new ObjectInputStream(client.getInputStream());) {
-                System.out.println("preparação ok...");
-                // TODO: precisa abrir dnv a conexão, ver slides
-                System.out.println("cliente envia solicitacao ao servidor");
+                System.out.println("[Client] preparação ok...");
+                System.out.println("[Client] cliente envia mensagem " + msg.getType() + " ao servidor");
                 // enviar solicitação ao servidor
                 objectOut.writeObject(msg);
 
-                System.out.println("espera resposta");
+                System.out.println("[Client] espera resposta");
                 // receber resposta e extrair valor
                 msg = (Message) objectIn.readObject();
+                System.out.println("[Client] recebeu mensagem " + msg.getType() + " do servidor");
                 if ((msg.getType()).equals("RET_POP")) {
                     valorInteiro = msg.getValue();
-                    System.out.println("conseguiu: " + valorInteiro);
+                    System.out.println("[Client] valor recebido: " + valorInteiro);
                 }
-                System.out.println("fecha conexão");
+                System.out.println("[Client] fecha conexão");
                 client.close();
                 somatorio += valorInteiro;
 
                 if (valorInteiro == 0) {
-                    System.out.println("pilha vazia!");
-                    System.out.println("somatorio: " + somatorio);
+                    System.out.println("[Client] pilha vazia!");
+                    System.out.println("[Client] somatorio: " + somatorio);
                     return;
                 }
             } catch (final Exception e) {

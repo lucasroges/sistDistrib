@@ -14,7 +14,7 @@ import model.StackManager;
  */
 public class Server {
 
-    private static final short MIN = 1, MAX = 32767;
+    private static final short MIN = 1, MAX = 10;
 
     private final int port;
     private final StackManager stack;
@@ -42,8 +42,8 @@ public class Server {
      * @throws IOException In case of IO error.
      */
     public void execute() throws IOException {
-        System.out.println("executa servidor");
-        System.out.println("inicializa pilha");
+        System.out.println("[Server] executa servidor");
+        System.out.println("[Server] inicializa pilha");
         for (byte i = 1; i <= 4; i++) {
             stack.push((short) 0); // 4 zeros at the begin
         }
@@ -55,15 +55,24 @@ public class Server {
 
         stack.print_q();
         try (ServerSocket servidor = new ServerSocket(this.port)) {
-            System.out.println("Porta " + port + " aberta!");
+            System.out.println("[Server] Porta " + port + " aberta!");
 
             while (true) {
                 Socket client = servidor.accept();
-                System.out.println("Nova conexão com o cliente " + client.getInetAddress().getHostAddress());
+                System.out.println("[Server] Nova conexão com o cliente " + client.getInetAddress().getHostAddress());
 
                 ProxyClient tc = new ProxyClient(client, this);
-                System.out.println("start no proxy cliente (produtor)");
+                System.out.println("[Server] start no proxy cliente (consumidor)");
                 new Thread(tc).start();
+
+                try {
+                    System.out.println("[Server] espera 5s");
+                    Thread.sleep(5000);
+                    System.out.println("[Server] acordou");
+                } catch (InterruptedException ex) {
+                    ex.printStackTrace();
+                }
+
             }
         }
     }
