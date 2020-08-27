@@ -1,11 +1,10 @@
 package control;
 
 import java.io.IOException;
-import java.io.PrintStream;
+import java.util.concurrent.ThreadLocalRandom;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.List;
+import model.StackManager;
 
 /**
  * Implementation of server.
@@ -15,8 +14,10 @@ import java.util.List;
  */
 public class Server {
 
+    private static final short MIN = 1, MAX = 32767;
+
     private final int port;
-    private final List<Socket> clients = new ArrayList<>();
+    private final StackManager stack;
 
     /**
      * Creates a server.
@@ -25,6 +26,14 @@ public class Server {
      */
     public Server(int port) {
         this.port = port;
+        stack = new StackManager();
+    }
+
+    /**
+     * @return The references stack from this server.
+     */
+    public StackManager getStack() {
+        return stack;
     }
 
     /**
@@ -33,37 +42,28 @@ public class Server {
      * @throws IOException In case of IO error.
      */
     public void execute() throws IOException {
+        System.out.println("executa servidor");
+        System.out.println("inicializa pilha");
+        for (byte i = 1; i <= 4; i++) {
+            stack.push((short) 0); // 4 zeros at the begin
+        }
+
+        for (short i = 1; i < 20; i++) {
+            short randomNum = (short) ThreadLocalRandom.current().nextInt(MIN, MAX + 1);
+            stack.push(randomNum);
+        }
+
+        stack.print_q();
         try (ServerSocket servidor = new ServerSocket(this.port)) {
             System.out.println("Porta " + port + " aberta!");
 
             while (true) {
-                Socket cliente = servidor.accept();
-                System.out.println("Nova conexão com o cliente "
-                        + cliente.getInetAddress().getHostAddress());
+                Socket client = servidor.accept();
+                System.out.println("Nova conexão com o cliente " + client.getInetAddress().getHostAddress());
 
-                this.clients.add(cliente);
-
-                ProxyCliente tc = new ProxyCliente(cliente, this);
+                ProxyClient tc = new ProxyClient(client, this);
+                System.out.println("start no proxy cliente (produtor)");
                 new Thread(tc).start();
-            }
-        }
-    }
-
-    /**
-     * Spread the message to all the clients on this server, except to the one who sent it.
-     *
-     * @param clientWhoSent Client who sent the message, so we don't send to him.
-     * @param msg Message to send.
-     */
-    public void spreadMessage(final Socket clientWhoSent, final String msg) {
-        for (Socket client : clients) {
-            if (!client.equals(clientWhoSent)) {
-                try {
-                    PrintStream ps = new PrintStream(client.getOutputStream());
-                    ps.println(msg);
-                } catch (final IOException e) {
-                    e.printStackTrace();
-                }
             }
         }
     }

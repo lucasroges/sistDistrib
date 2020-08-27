@@ -1,10 +1,11 @@
 package control;
 
 import java.io.IOException;
-import java.io.PrintStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.Scanner;
+import model.Message;
 
 /**
  * Client implementation.
@@ -35,16 +36,39 @@ public class Client {
      * @throws IOException In case of IO error.
      */
     public void execute() throws UnknownHostException, IOException {
-        try (Socket cliente = new Socket(host, port);
-                Scanner teclado = new Scanner(System.in);
-                PrintStream saida = new PrintStream(cliente.getOutputStream())) {
-            System.out.println("O cliente se conectou ao servidor!");
+        // TODO: ver slide 23
+        int valorInteiro = 0;
+        int somatorio = 0;
+        System.out.println("executando client (consumidor)");
+        while (true) {
+            Message msg = new Message("POP", (short) 0);
+            try (Socket client = new Socket(host, port);
+                    ObjectOutputStream objectOut = new ObjectOutputStream(client.getOutputStream());
+                    ObjectInputStream objectIn = new ObjectInputStream(client.getInputStream());) {
+                System.out.println("preparação ok...");
+                // TODO: precisa abrir dnv a conexão, ver slides
+                System.out.println("cliente envia solicitacao ao servidor");
+                // enviar solicitação ao servidor
+                objectOut.writeObject(msg);
 
-            ProxyServer r = new ProxyServer(cliente.getInputStream());
-            new Thread(r).start();
+                System.out.println("espera resposta");
+                // receber resposta e extrair valor
+                msg = (Message) objectIn.readObject();
+                if ((msg.getType()).equals("RET_POP")) {
+                    valorInteiro = msg.getValue();
+                    System.out.println("conseguiu: " + valorInteiro);
+                }
+                System.out.println("fecha conexão");
+                client.close();
+                somatorio += valorInteiro;
 
-            while (teclado.hasNextLine()) {
-                saida.println(teclado.nextLine());
+                if (valorInteiro == 0) {
+                    System.out.println("pilha vazia!");
+                    System.out.println("somatorio: " + somatorio);
+                    return;
+                }
+            } catch (final Exception e) {
+                e.printStackTrace();
             }
         }
     }
