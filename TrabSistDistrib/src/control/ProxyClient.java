@@ -26,6 +26,8 @@ public class ProxyClient implements Runnable {
     public ProxyClient(final Socket client, final Server server) {
         this.client = client;
         this.server = server;
+
+        System.out.println("[ProxyClient] Nova thread");
     }
 
     @Override
