@@ -1,7 +1,6 @@
 package control;
 
 import java.io.IOException;
-import java.util.concurrent.ThreadLocalRandom;
 import java.net.ServerSocket;
 import java.net.Socket;
 import model.StackManager;
@@ -43,17 +42,6 @@ public class Server {
      */
     public void execute() throws IOException {
         System.out.println("[Server] executa servidor");
-        System.out.println("[Server] inicializa pilha");
-        for (byte i = 1; i <= 4; i++) {
-            stack.push((short) 0); // 4 zeros at the begin
-        }
-
-        for (short i = 1; i < 20; i++) {
-            short randomNum = (short) ThreadLocalRandom.current().nextInt(MIN, MAX + 1);
-            stack.push(randomNum);
-        }
-
-        stack.print_q();
         try (ServerSocket servidor = new ServerSocket(this.port)) {
             System.out.println("[Server] Porta " + port + " aberta!");
 
@@ -62,12 +50,12 @@ public class Server {
                 System.out.println("[Server] Nova conexão com o cliente " + client.getInetAddress().getHostAddress());
 
                 ProxyClient tc = new ProxyClient(client, this);
-                System.out.println("[Server] start no proxy cliente (consumidor)");
+                System.out.println("[Server] start no proxy client");
                 new Thread(tc).start();
 
                 try {
                     System.out.println("[Server] espera 5s");
-                    Thread.sleep(5000);
+                    Thread.sleep(3000);
                     System.out.println("[Server] acordou");
                 } catch (InterruptedException ex) {
                     ex.printStackTrace();

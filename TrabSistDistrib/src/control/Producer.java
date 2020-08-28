@@ -1,3 +1,8 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
 package control;
 
 import java.io.IOException;
@@ -5,68 +10,58 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.concurrent.ThreadLocalRandom;
 import model.Message;
 
 /**
- * Client implementation.
  *
  * @author Joao Victor Bolsson Marques (jvmarques@inf.ufsm.br)
- * @version 2020, Aug 26.
+ * @version 2020, Aug 28.
  */
-public class Client {
+public class Producer {
+
+    private static final short MIN = 1, MAX = 10;
 
     private final String host;
     private final int port;
 
     /**
-     * Creates a client.
+     * Creates a producer.
      *
      * @param host Client host.
      * @param port Port to send.
      */
-    public Client(final String host, int port) {
+    public Producer(final String host, int port) {
         this.host = host;
         this.port = port;
     }
 
     /**
-     * Execute the client.
+     * Execute the producer.
      *
      * @throws UnknownHostException In case of unknown host.
      * @throws IOException In case of IO error.
      */
     public void execute() throws UnknownHostException, IOException {
-        // TODO: ver slide 23
-        int valorInteiro = 0;
-        int somatorio = 0;
-        System.out.println("[Client] executando client (consumidor)");
+        System.out.println("[Producer] executando client (consumidor)");
+        int i = 0;
+        Message msg;
+        short randomNum = 0;
         while (true) {
-            Message msg = new Message("POP", (short) 0);
+            if (++i > 4) {
+                randomNum = (short) ThreadLocalRandom.current().nextInt(MIN, MAX + 1);
+            }
+            msg = new Message("PUSH", (short) randomNum);
             try (Socket client = new Socket(host, port);
                     ObjectOutputStream objectOut = new ObjectOutputStream(client.getOutputStream());
                     ObjectInputStream objectIn = new ObjectInputStream(client.getInputStream())) {
-                System.out.println("[Client] preparação ok...");
-                System.out.println("[Client] envia mensagem " + msg.getType() + " ao servidor");
+                System.out.println("[Producer] preparação ok...");
+                System.out.println("[Producer] envia mensagem " + msg.getType() + " ao servidor");
                 // enviar solicitação ao servidor
                 objectOut.writeObject(msg);
 
-                System.out.println("[Client] espera resposta");
-                // receber resposta e extrair valor
-                msg = (Message) objectIn.readObject();
-                System.out.println("[Client] recebeu mensagem " + msg.getType() + " do servidor");
-                if ((msg.getType()).equals("RET_POP")) {
-                    valorInteiro = msg.getValue();
-                    System.out.println("[Client] valor recebido: " + valorInteiro);
-                }
-                System.out.println("[Client] fecha conexão");
+                System.out.println("[Producer] fecha conexão");
                 client.close();
-                somatorio += valorInteiro;
-
-                if (valorInteiro == 0) {
-                    System.out.println("[Client] pilha vazia!");
-                    System.out.println("[Client] somatorio: " + somatorio);
-                    return;
-                }
             } catch (final Exception e) {
                 e.printStackTrace();
             }
@@ -80,6 +75,7 @@ public class Client {
      * @throws java.io.IOException In case of IO error.
      */
     public static void main(final String[] args) throws IOException {
-        new Client("127.0.0.1", 12345).execute();
+        new Producer("127.0.0.1", 12345).execute();
     }
+
 }

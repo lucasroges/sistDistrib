@@ -21,6 +21,7 @@ public class StackManager {
     public synchronized void push(short value) {
         if (stack.size() < MAX) {
             stack.push(value);
+            print_q();
         }
     }
 
@@ -31,7 +32,9 @@ public class StackManager {
      */
     public synchronized short pop() {
         if (!stack.isEmpty()) {
-            return stack.pop();
+            Short val = stack.pop();
+            print_q();
+            return val;
         }
         return 0;
     }
@@ -39,7 +42,7 @@ public class StackManager {
     /**
      * Prints the stack.
      */
-    public void print_q() {
+    private synchronized void print_q() {
         System.out.println("---Stack elements----");
 
         for (Short s : stack) {

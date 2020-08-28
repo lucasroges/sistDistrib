@@ -32,24 +32,29 @@ public class ProxyClient implements Runnable {
 
     @Override
     public void run() {
-        System.out.println("[ProxyClient] rodando thread proxy client (consumidor)");
+        System.out.println("[ProxyClient] rodando thread proxy client");
         Message msg;
 
         // ligação de streams de entrada e saída
         try (ObjectOutputStream objectOut = new ObjectOutputStream(client.getOutputStream());
                 ObjectInputStream objectIn = new ObjectInputStream(client.getInputStream())) {
-            System.out.println("[ProxyClient] espera mensagem do consumidor");
+            System.out.println("[ProxyClient] espera mensagem");
             // lê solicitação de serviço
             msg = (Message) objectIn.readObject();
-            System.out.println("[ProxyClient] recebeu mensagem " + msg.getType() + " do consumidor");
-            if ((msg.getType()).equals("POP")) {
-                System.out.println("[ProxyClient] retira da pilha e envia o valor ao consumidor");
-                // enviar resposta ao servidor
-                msg.setType("RET_POP");
-                msg.setValue(server.getStack().pop());
+            System.out.println("[ProxyClient] recebeu mensagem " + msg.getType());
+            switch (msg.getType()) {
+                case "POP":
+                    System.out.println("[ProxyClient] retira da pilha e envia o valor ao consumidor");
+                    // enviar resposta ao servidor
+                    msg.setType("RET_POP");
+                    msg.setValue(server.getStack().pop());
+                    objectOut.writeObject(msg);
+                    break;
 
-                server.getStack().print_q();
-                objectOut.writeObject(msg);
+                case "PUSH":
+                    server.getStack().push(msg.getValue());
+                default:
+                    break;
             }
         } catch (final IOException | ClassNotFoundException e) {
             e.printStackTrace();
