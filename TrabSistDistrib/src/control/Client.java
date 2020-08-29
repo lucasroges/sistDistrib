@@ -41,20 +41,20 @@ public class Client {
         int somatorio = 0;
         System.out.println("[Client] executando client (consumidor)");
         while (true) {
-            Message msg = new Message("POP", (short) 0);
+            Message msg = new Message(Message.TYPE.POP, (short) 0);
             try (Socket client = new Socket(host, port);
                     ObjectOutputStream objectOut = new ObjectOutputStream(client.getOutputStream());
                     ObjectInputStream objectIn = new ObjectInputStream(client.getInputStream())) {
                 System.out.println("[Client] preparação ok...");
-                System.out.println("[Client] envia mensagem " + msg.getType() + " ao servidor");
+                System.out.println("[Client] envia mensagem " + msg + " ao servidor");
                 // enviar solicitação ao servidor
                 objectOut.writeObject(msg);
 
                 System.out.println("[Client] espera resposta");
                 // receber resposta e extrair valor
                 msg = (Message) objectIn.readObject();
-                System.out.println("[Client] recebeu mensagem " + msg.getType() + " do servidor");
-                if ((msg.getType()).equals("RET_POP")) {
+                System.out.println("[Client] recebeu mensagem " + msg + " do servidor");
+                if ((msg.getType()).equals(Message.TYPE.RET_POP)) {
                     valorInteiro = msg.getValue();
                     System.out.println("[Client] valor recebido: " + valorInteiro);
                 }

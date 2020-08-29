@@ -51,12 +51,12 @@ public class Producer {
             if (++i > 4) {
                 randomNum = (short) ThreadLocalRandom.current().nextInt(MIN, MAX + 1);
             }
-            msg = new Message("PUSH", (short) randomNum);
+            msg = new Message(Message.TYPE.PUSH, (short) randomNum);
             try (Socket client = new Socket(host, port);
                     ObjectOutputStream objectOut = new ObjectOutputStream(client.getOutputStream());
                     ObjectInputStream objectIn = new ObjectInputStream(client.getInputStream())) {
                 System.out.println("[Producer] preparação ok...");
-                System.out.println("[Producer] envia mensagem " + msg.getType() + " ao servidor");
+                System.out.println("[Producer] envia mensagem " + msg + " ao servidor");
                 // enviar solicitação ao servidor
                 objectOut.writeObject(msg);
 

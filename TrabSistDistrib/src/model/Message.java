@@ -13,8 +13,27 @@ public class Message implements Serializable {
     /**
      * Types: POP, PUSH, RET_POP
      */
-    public String tipo;
-    public short numero;
+    public TYPE type;
+
+    /**
+     * Messages types allowed.
+     */
+    public enum TYPE {
+        POP("POP"), PUSH("PUSH"), RET_POP("RET_POP");
+
+        private final String key;
+
+        private TYPE(final String key) {
+            this.key = key;
+        }
+
+        @Override
+        public String toString() {
+            return key;
+        }
+
+    }
+    public short value;
 
     /**
      * Creates a message.
@@ -22,16 +41,9 @@ public class Message implements Serializable {
      * @param type Message type.
      * @param value Message value.
      */
-    public Message(final String type, short value) {
-        this.tipo = type;
-        this.numero = value;
-    }
-
-    /**
-     * Creates an empty message.
-     */
-    public Message() {
-        this("", (short) 0);
+    public Message(final TYPE type, short value) {
+        this.type = type;
+        this.value = value;
     }
 
     /**
@@ -39,15 +51,15 @@ public class Message implements Serializable {
      *
      * @param t Type to set.
      */
-    public void setType(final String t) {
-        tipo = t;
+    public void setType(final TYPE t) {
+        type = t;
     }
 
     /**
      * @return The message type.
      */
-    public String getType() {
-        return tipo;
+    public TYPE getType() {
+        return type;
     }
 
     /**
@@ -56,14 +68,19 @@ public class Message implements Serializable {
      * @param n Value to set.
      */
     public void setValue(short n) {
-        numero = n;
+        value = n;
     }
 
     /**
      * @return The message value.
      */
     public short getValue() {
-        return numero;
+        return value;
+    }
+
+    @Override
+    public String toString() {
+        return "msg(" + type + ", " + value + ")";
     }
 
 }
