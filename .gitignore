@@ -4,3 +4,4 @@ dist/
 *.mf
 build.xml
 *.properties
+/TrabSistDistribRMI/nbproject/private/
