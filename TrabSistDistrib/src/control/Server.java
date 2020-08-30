@@ -13,8 +13,6 @@ import model.StackManager;
  */
 public class Server {
 
-    private static final short MIN = 1, MAX = 10;
-
     private final int port;
     private final StackManager stack;
 
