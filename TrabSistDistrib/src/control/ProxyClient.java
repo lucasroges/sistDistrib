@@ -59,7 +59,5 @@ public class ProxyClient implements Runnable {
         } catch (final IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
-
-        // TODO: ver slide 25
     }
 }

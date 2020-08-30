@@ -13,7 +13,7 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public class Producer {
 
-    private static final short MIN = 1, MAX = 10;
+    private static final short MIN = 1, MAX = 32767;
 
     /**
      * Executes this class.

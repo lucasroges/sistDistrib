@@ -20,7 +20,7 @@ import model.Message;
  */
 public class Producer {
 
-    private static final short MIN = 1, MAX = 10;
+    private static final short MIN = 1, MAX = 32767;
 
     private final String host;
     private final int port;

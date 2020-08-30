@@ -11,7 +11,7 @@ import java.util.Stack;
  */
 public class StackManagerImpl extends UnicastRemoteObject implements StackManager {
 
-    private static final byte MAX = 15;
+    private static final short MAX = 10000;
     private final Stack<Short> stack = new Stack<>();
 
     StackManagerImpl() throws RemoteException {
@@ -19,7 +19,7 @@ public class StackManagerImpl extends UnicastRemoteObject implements StackManage
     }
 
     @Override
-    public void push(short value) throws RemoteException {
+    public synchronized void push(short value) throws RemoteException {
         if (stack.size() < MAX) {
             stack.push(value);
             print_q();
@@ -27,13 +27,13 @@ public class StackManagerImpl extends UnicastRemoteObject implements StackManage
     }
 
     @Override
-    public short pop() throws RemoteException {
+    public synchronized short pop() throws RemoteException {
         if (!stack.isEmpty()) {
             Short val = stack.pop();
             print_q();
             return val;
         }
-        return 0;
+        return -1;
     }
 
     /**

@@ -10,7 +10,7 @@ import java.util.Stack;
  */
 public class StackManager {
 
-    private static final byte MAX = 15;
+    private static final short MAX = 10000;
     private final Stack<Short> stack = new Stack<>();
 
     /**
@@ -36,7 +36,7 @@ public class StackManager {
             print_q();
             return val;
         }
-        return 0;
+        return -1;
     }
 
     /**

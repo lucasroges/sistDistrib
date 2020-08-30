@@ -24,11 +24,15 @@ public class Client {
             int sum = 0;
             while (true) {
                 pop = lookup.pop();
-                sum += pop;
-                System.out.println("[Client] Pop " + pop);
-                if (pop == 0) {
-                    System.out.println("[Client] Somatório: " + sum);
-                    break;
+                if (pop >= 0) {
+                    sum += pop;
+                    System.out.println("[Client] Pop " + pop);
+                    if (pop == 0) {
+                        System.out.println("[Client] Somatório: " + sum);
+                        break;
+                    }
+                } else {
+                    System.out.println("[Client] Pilha vazia");
                 }
                 Thread.sleep(1000); // producer sleeps 1s before the next pop
             }

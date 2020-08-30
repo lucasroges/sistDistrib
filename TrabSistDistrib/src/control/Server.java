@@ -52,7 +52,7 @@ public class Server {
                 new Thread(tc).start();
 
                 try {
-                    System.out.println("[Server] espera 5s");
+                    System.out.println("[Server] espera 3s");
                     Thread.sleep(3000);
                     System.out.println("[Server] acordou");
                 } catch (InterruptedException ex) {

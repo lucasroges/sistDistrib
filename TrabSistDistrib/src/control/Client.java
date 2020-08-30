@@ -36,7 +36,6 @@ public class Client {
      * @throws IOException In case of IO error.
      */
     public void execute() throws UnknownHostException, IOException {
-        // TODO: ver slide 23
         int valorInteiro = 0;
         int somatorio = 0;
         System.out.println("[Client] executando client (consumidor)");
@@ -60,10 +59,13 @@ public class Client {
                 }
                 System.out.println("[Client] fecha conexão");
                 client.close();
-                somatorio += valorInteiro;
-
+                if (valorInteiro >= 0) {
+                    somatorio += valorInteiro;
+                } else {
+                    System.out.println("[Client] pilha vazia");
+                }
                 if (valorInteiro == 0) {
-                    System.out.println("[Client] pilha vazia!");
+                    System.out.println("[Client] encontrou zero!");
                     System.out.println("[Client] somatorio: " + somatorio);
                     return;
                 }
