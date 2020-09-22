@@ -5,6 +5,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import model.Message;
 
 /**
  * Client implementation.
@@ -39,7 +40,7 @@ public class Client {
         int somatorio = 0;
         System.out.println("[Client] executando client (consumidor)");
         while (true) {
-            String msg = "";
+            Message msg = new Message(Message.TYPE.POP, (short) 0);
             try (Socket client = new Socket(host, port);
                     ObjectOutputStream objectOut = new ObjectOutputStream(client.getOutputStream());
                     ObjectInputStream objectIn = new ObjectInputStream(client.getInputStream())) {
@@ -50,24 +51,24 @@ public class Client {
 
                 System.out.println("[Client] espera resposta");
                 // receber resposta e extrair valor
-//                msg = (Message) objectIn.readObject();
-//                System.out.println("[Client] recebeu mensagem " + msg + " do servidor");
-//                if ((msg.getType()).equals(Message.TYPE.RET_POP)) {
-//                    valorInteiro = msg.getValue();
-//                    System.out.println("[Client] valor recebido: " + valorInteiro);
-//                }
-//                System.out.println("[Client] fecha conexão");
-//                client.close();
-//                if (valorInteiro >= 0) {
-//                    somatorio += valorInteiro;
-//                } else {
-//                    System.out.println("[Client] pilha vazia");
-//                }
-//                if (valorInteiro == 0) {
-//                    System.out.println("[Client] encontrou zero!");
-//                    System.out.println("[Client] somatorio: " + somatorio);
-//                    return;
-//                }
+                msg = (Message) objectIn.readObject();
+                System.out.println("[Client] recebeu mensagem " + msg + " do servidor");
+                if ((msg.getType()).equals(Message.TYPE.RET_POP)) {
+                    valorInteiro = msg.getValue();
+                    System.out.println("[Client] valor recebido: " + valorInteiro);
+                }
+                System.out.println("[Client] fecha conexão");
+                client.close();
+                if (valorInteiro >= 0) {
+                    somatorio += valorInteiro;
+                } else {
+                    System.out.println("[Client] pilha vazia");
+                }
+                if (valorInteiro == 0) {
+                    System.out.println("[Client] encontrou zero!");
+                    System.out.println("[Client] somatorio: " + somatorio);
+                    return;
+                }
             } catch (final Exception e) {
                 e.printStackTrace();
             }
@@ -77,10 +78,14 @@ public class Client {
     /**
      * Executes this class.
      *
-     * @param args Command line arguments (ignored).
+     * @param args Command line arguments.
      * @throws java.io.IOException In case of IO error.
      */
     public static void main(final String[] args) throws IOException {
-        new Client("127.0.0.1", 12345).execute();
+        if (args.length > 0) {
+            new Client(args[0], 12345).execute();
+        } else {
+            new Client("127.0.0.1", 12345).execute();
+        }
     }
 }
