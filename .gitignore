@@ -1,5 +1,6 @@
 nbproject/private/*
 build/
+.idea/
 dist/
 *.mf
 build.xml
