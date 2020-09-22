@@ -40,7 +40,9 @@ public class Client {
         System.out.println("[Client] executando client (consumidor)");
         while (true) {
             String msg = "";
-            try ( Socket client = new Socket(host, port);  ObjectOutputStream objectOut = new ObjectOutputStream(client.getOutputStream());  ObjectInputStream objectIn = new ObjectInputStream(client.getInputStream())) {
+            try (Socket client = new Socket(host, port);
+                    ObjectOutputStream objectOut = new ObjectOutputStream(client.getOutputStream());
+                    ObjectInputStream objectIn = new ObjectInputStream(client.getInputStream())) {
                 System.out.println("[Client] preparação ok...");
                 System.out.println("[Client] envia mensagem " + msg + " ao servidor");
                 // enviar solicitação ao servidor

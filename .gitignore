@@ -6,3 +6,5 @@ dist/
 build.xml
 *.properties
 /TrabSistDistribRMI/nbproject/private/
+/TrabFinal/target/
+/TrabFinal/nbproject/private/
