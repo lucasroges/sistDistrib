@@ -1,4 +1,6 @@
-package model;
+package CausalMulticast;
+
+import model.Message;
 
 /**
  *

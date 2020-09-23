@@ -1,14 +1,20 @@
-//package client;
+package client;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
+import java.io.BufferedOutputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.*;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Scanner;
 import java.net.*;
 import model.MCMessage;
+import model.ICausalMulticast;
 
 /**
  * Client implementation.
@@ -17,7 +23,7 @@ import model.MCMessage;
  * @author Lucas Roges de Araujo (lraraujo@inf.ufsm.br)
  * @version 2020, Set 22.
  */
-public class Client extends Thread {
+public class Client extends Thread implements ICausalMulticast {
 
     private final String host;
     private final int port;
@@ -122,49 +128,10 @@ public class Client extends Thread {
     /**
      * Execute the client.
      *
-     * @throws UnknownHostException In case of unknown host.
-     * @throws IOException In case of IO error.
      */
     public void execute() {
         Thread thread = new Thread(this);
         thread.start();
-/*        int valorInteiro = 0;
-        int somatorio = 0;
-        System.out.println("[Client] executando client (consumidor)");
-        while (true) {
-            Message msg = new Message(Message.TYPE.POP, (short) 0);
-            try (Socket client = new Socket(host, port);
-                    ObjectOutputStream objectOut = new ObjectOutputStream(client.getOutputStream());
-                    ObjectInputStream objectIn = new ObjectInputStream(client.getInputStream())) {
-                System.out.println("[Client] preparação ok...");
-                System.out.println("[Client] envia mensagem " + msg + " ao servidor");
-                // enviar solicitação ao servidor
-                objectOut.writeObject(msg);
-
-                System.out.println("[Client] espera resposta");
-                // receber resposta e extrair valor
-                msg = (Message) objectIn.readObject();
-                System.out.println("[Client] recebeu mensagem " + msg + " do servidor");
-                if ((msg.getType()).equals(Message.TYPE.RET_POP)) {
-                    valorInteiro = msg.getValue();
-                    System.out.println("[Client] valor recebido: " + valorInteiro);
-                }
-                System.out.println("[Client] fecha conexão");
-                client.close();
-                if (valorInteiro >= 0) {
-                    somatorio += valorInteiro;
-                } else {
-                    System.out.println("[Client] pilha vazia");
-                }
-                if (valorInteiro == 0) {
-                    System.out.println("[Client] encontrou zero!");
-                    System.out.println("[Client] somatorio: " + somatorio);
-                    return;
-                }
-            } catch (final Exception e) {
-                e.printStackTrace();
-            }
-        }*/
     }
 
     /**
