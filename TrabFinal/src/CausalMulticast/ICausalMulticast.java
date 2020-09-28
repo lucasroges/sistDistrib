@@ -1,5 +1,7 @@
 package CausalMulticast;
 
+import model.Message;
+
 /**
  *
  * @author Joao Victor Bolsson Marques (jvmarques@inf.ufsm.br)

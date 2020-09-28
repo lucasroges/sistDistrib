@@ -1,3 +1,5 @@
+package CausalMulticast;
+
 import java.util.LinkedList;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -9,6 +11,7 @@ import java.util.Scanner;
 import java.util.Queue;
 import java.net.ServerSocket;
 import model.Message;
+import client.Client;
 
 /**
  *
@@ -74,7 +77,7 @@ public class CMChannel extends Thread {
                 ObjectOutputStream out = new ObjectOutputStream(s.getOutputStream());
                 out.writeObject(msg);
                 System.out.println("[Mensagem enviada]"
-                            + "\nConteúdo: " + msg.msg
+                            + "\nConteÃºdo: " + msg.msg
                             + "\nOrigem: " + msg.sender);
                 s.close();
             }
