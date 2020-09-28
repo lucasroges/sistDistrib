@@ -77,7 +77,7 @@ public class CMChannel extends Thread {
         for (int i = 0; i < this.buffer.size(); i++) {
             Boolean discard = true;
             for (int j = 0; j < this.client.getIpAddresses().size(); j++) {
-                if (this.buffer.get(i).getVC().get(j) > message.getVC().get(j)) {
+                if (this.buffer.get(i).getVC().get(j) < this.client.getMC().get(j).get(hostIndex)) {
                     discard = false;
                     break;
                 }
@@ -153,15 +153,15 @@ public class CMChannel extends Thread {
      * @throws IOException In case of IO exception.
      * @throws UnknownHostException In case of unknown host.
      */
-    public void mcsend(final Message msg) throws IOException, UnknownHostException {
+    public void mcsend(final Message msg) throws IOException, UnknownHostException, InterruptedException {
         // para obter entrada do cliente
         Scanner sc = new Scanner(System.in);
         String in;
+        // Aguardar outros outputs
+        Thread.sleep(1000);
         // enviar alguma mensagem do buffer, se houver
         if (!buffer.isEmpty()) {
             try {
-                // Aguardar outros outputs
-                Thread.sleep(100);
                 syncOutput("Enviar alguma mensagem do buffer? (Se sim, digitar o índex a partir de 0)");
                 in = sc.nextLine();
                 if (Integer.parseInt(in) < buffer.size()) {
@@ -172,7 +172,7 @@ public class CMChannel extends Thread {
                         send(this.client.getIpAddresses().get(Integer.parseInt(in)), buffer.get(bufferIndex));
                     }
                 }
-            } catch (final NumberFormatException | InterruptedException e) {
+            } catch (final NumberFormatException e) {
                 // ignora e segue, pois não quer enviar mensagem do buffer
             }
         }
