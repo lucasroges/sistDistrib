@@ -39,6 +39,9 @@ public class Client extends Thread implements ICausalMulticast {
     // controle de ordenacao
     public List<Integer> VC;
 
+    // controle de descarte
+    public List<List<Integer>> MC;
+
     /**
      * Creates a client.
      *
@@ -50,6 +53,7 @@ public class Client extends Thread implements ICausalMulticast {
         this.port = port;
         this.ipAddresses = new ArrayList<String>();
         this.VC = new ArrayList<Integer>();
+        this.MC = new ArrayList<List<Integer>>();
     }
 
     /**
@@ -106,6 +110,10 @@ public class Client extends Thread implements ICausalMulticast {
      */
     @Override
     public void run() {
+        this.ipAddresses.add(this.host);
+        this.VC.add(0);
+        this.MC.add(new ArrayList<Integer>());
+        this.MC.get(0).add(0);
         MCMessage msg = new MCMessage(MCMessage.TYPE.JOIN, this.host);
         InetAddress group = null;
         MulticastSocket ms = null;
@@ -125,10 +133,22 @@ public class Client extends Thread implements ICausalMulticast {
                     this.ipAddresses.add(recv.client);
                     msg.type = MCMessage.TYPE.RET_JOIN;
                     this.VC.add(0);
+                    this.MC.add(new ArrayList<Integer>());
+                    for (int i = 0; i < this.ipAddresses.size(); i++) {
+                        this.MC.get(i).add(0);
+                        this.MC.get(this.MC.size() - 1).add(0);
+                    }
+                    this.MC.get(this.MC.size() - 1).remove(this.MC.get(this.MC.size() - 1).size() - 1);
                     sendObject(ms, msg, group);
                 } else if (recv.type == MCMessage.TYPE.RET_JOIN) {
                     this.ipAddresses.add(recv.client);
                     this.VC.add(0);
+                    this.MC.add(new ArrayList<Integer>());
+                    for (int i = 0; i < this.ipAddresses.size(); i++) {
+                        this.MC.get(i).add(0);
+                        this.MC.get(this.MC.size() - 1).add(0);
+                    }
+                    this.MC.get(this.MC.size() - 1).remove(this.MC.get(this.MC.size() - 1).size() - 1);
                 }
                 // ordena o vetor pelos ips para auxiliar no controle dos outros vetores de processos
                 java.util.Collections.sort(this.ipAddresses);
@@ -159,7 +179,7 @@ public class Client extends Thread implements ICausalMulticast {
         int counter = 1;
         while(true) {
             // constroi msg e o timestamp
-            Message msg = new Message(this.host, "Mensagem " + counter);
+            Message msg = new Message(this.host, "M" + counter + " " + this.host);
             this.channel.mcsend(msg);
             counter++;
         }

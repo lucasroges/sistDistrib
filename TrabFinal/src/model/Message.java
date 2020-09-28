@@ -22,6 +22,9 @@ public class Message implements Serializable {
     // VC
     public List<Integer> VC;
 
+    // MC
+    public List<Integer> MC;
+
     /**
      * Creates a message.
      *

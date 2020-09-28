@@ -23,8 +23,11 @@ public class CMChannel extends Thread {
     // 
     public Client client;
 
-    // fila de mensagens enviadas
+    // lista de mensagens enviadas
     public List<Message> buffer;
+
+    // lista de mensagens recebidas
+    public List<Message> recvBuffer;
 
     /**
      * 
@@ -32,6 +35,7 @@ public class CMChannel extends Thread {
     public CMChannel(Client client) {
         this.client = client;
         this.buffer = new ArrayList<Message>();
+        this.recvBuffer = new ArrayList<Message>();
         Thread thread = new Thread(this);
         thread.start();
     }
@@ -43,13 +47,42 @@ public class CMChannel extends Thread {
     public void causalOrdering(Message message) {
         // atrasa entrega
         for(int i = 0; i < this.client.VC.size(); i++) {
-            while(message.VC.get(i) <= this.client.VC.get(i));
+            while(message.VC.get(i) > this.client.VC.get(i));
         }
         // atualiza variável de controle
         if (this.client.host != message.sender) {
             int senderIndex = this.client.ipAddresses.indexOf(message.sender);
             this.client.VC.set(senderIndex, this.client.VC.get(senderIndex) + 1);
         }
+    }
+
+    public void stabilizer(Message message) {
+        this.recvBuffer.add(message);
+        int senderIndex = this.client.ipAddresses.indexOf(message.sender);
+        this.client.MC.set(senderIndex, message.MC);
+        int hostIndex = this.client.ipAddresses.indexOf(this.client.host);
+        if (hostIndex != senderIndex) {
+            this.client.MC.get(hostIndex).set(senderIndex, this.client.MC.get(hostIndex).get(senderIndex) + 1);
+        }
+        // descarte
+        for (int i = 0; i < this.recvBuffer.size(); i++) {
+            senderIndex = this.client.ipAddresses.indexOf(recvBuffer.get(i).sender);
+            int min = this.client.MC.get(0).get(senderIndex);
+            for (int j = 1; j < this.client.ipAddresses.size(); j++) {
+                if (this.client.MC.get(j).get(senderIndex) < min) {
+                    min = this.client.MC.get(j).get(senderIndex);
+                }
+            }
+            if (recvBuffer.get(i).MC.get(senderIndex) <= min) {
+                this.recvBuffer.remove(i);
+            }
+        }
+        // mostra o conteúdo do buffer de mensagens enviadas
+        System.out.print("Conteúdo do buffer de envios: ");
+        for (Message m : this.recvBuffer) {
+            System.out.print(m.msg + " | ");
+        }
+        System.out.println();
     }
 
     @Override
@@ -117,8 +150,10 @@ public class CMChannel extends Thread {
             }
             
         }
+        int hostIndex = this.client.ipAddresses.indexOf(this.client.host);
         // constroi o timestamp da msg
         msg.VC = new ArrayList<>(this.client.VC);
+        msg.MC = new ArrayList<>(this.client.MC.get(hostIndex));
         // adiciona msg ao buffer
         buffer.add(msg);
         // multicast
@@ -137,10 +172,10 @@ public class CMChannel extends Thread {
             }
         }
         // atualizar o vetor de relógios
-        int hostIndex = this.client.ipAddresses.indexOf(this.client.host);
         this.client.VC.set(hostIndex, this.client.VC.get(hostIndex) + 1);
-        // mostra o conteúdo do buffer
-        System.out.print("Conteúdo do buffer: ");
+        this.client.MC.get(hostIndex).set(hostIndex, this.client.MC.get(hostIndex).get(hostIndex) + 1);
+        // mostra o conteúdo do buffer de mensagens enviadas
+        System.out.print("Conteúdo do buffer de envios: ");
         for (Message message : buffer) {
             System.out.print(message.msg + " | ");
         }
