@@ -1,20 +1,21 @@
 package client;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.BufferedInputStream;
-import java.io.ByteArrayInputStream;
-import java.io.BufferedOutputStream;
-import java.net.Socket;
+import java.net.DatagramPacket;
 import java.net.UnknownHostException;
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Scanner;
-import java.net.*;
+import java.net.InetAddress;
+import java.net.MulticastSocket;
 import model.MCMessage;
-import model.ICausalMulticast;
+import model.Message;
+import CausalMulticast.*;
 
 /**
  * Client implementation.
@@ -25,13 +26,17 @@ import model.ICausalMulticast;
  */
 public class Client extends Thread implements ICausalMulticast {
 
-    private final String host;
-    private final int port;
-
-    private List<String> ipAddresses = new ArrayList<String>();
+    public final String host;
+    public final int port;
+    public  List<String> ipAddresses;
 
     private final String ipMulticastAddress = "239.255.0.0";
 
+    // 
+    private CMChannel channel;
+    
+    // controle de ordenacao
+    public List<Integer> VC;
 
     /**
      * Creates a client.
@@ -42,6 +47,18 @@ public class Client extends Thread implements ICausalMulticast {
     public Client(final String host, int port) {
         this.host = host;
         this.port = port;
+        this.ipAddresses = new ArrayList<String>() {{ add("172.31.17.152"); add("172.31.31.12"); add("172.31.19.92"); }};
+        this.VC = new ArrayList<Integer>() {{ add(0); add(0); add(0); }};
+    }
+
+    /**
+     * Gerencia ordenamento causal (talvez precise sincronizar o acesso ao VC)
+     */
+    @Override
+    public void deliver(Message m) {
+        System.out.println("[Mensagem recebida]"
+                        + "\nConteúdo: " + m.msg
+                        + "\nOrigem: " + m.sender);
     }
 
     /**
@@ -54,7 +71,7 @@ public class Client extends Thread implements ICausalMulticast {
      * @throws IOException 
      */
     public void sendObject(MulticastSocket ms, MCMessage msg, InetAddress group) throws UnknownHostException, IOException {
-        ByteArrayOutputStream bout = new ByteArrayOutputStream(100);
+        ByteArrayOutputStream bout = new ByteArrayOutputStream(1000);
         ObjectOutputStream out = new ObjectOutputStream(new BufferedOutputStream(bout));
         out.writeObject(msg);
         out.flush();
@@ -88,7 +105,7 @@ public class Client extends Thread implements ICausalMulticast {
      */
     @Override
     public void run() {
-        MCMessage msg = new MCMessage(MCMessage.TYPE.JOIN, this.host);
+        MCMessage msg = new MCMessage(MCMessage.TYPE.JOIN, this);
         InetAddress group = null;
         MulticastSocket ms = null;
         try {
@@ -125,13 +142,26 @@ public class Client extends Thread implements ICausalMulticast {
                 e.printStackTrace();
         }
     }
+    
     /**
      * Execute the client.
      *
      */
-    public void execute() {
+    public void execute() throws IOException {
+        // descober ip
         Thread thread = new Thread(this);
         thread.start();
+        // aguarda a descoberta inicial
+        this.channel = new CMChannel(this);
+        //Thread.sleep(2500);
+        int counter = 1;
+        while(true) {
+            // constroi msg e o timestamp
+            Message msg = new Message(this.host, "Mensagem " + counter);
+            this.channel.mcsend(msg);
+            counter++;
+        }
+
     }
 
     /**
