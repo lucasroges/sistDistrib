@@ -59,20 +59,8 @@ public class Client extends Thread implements ICausalMulticast {
         this.host = host;
         this.port = port;
         this.ipAddresses = new ArrayList<String>() {{ add("172.31.17.152"); add("172.31.31.12"); add("172.31.19.92"); }};
-        this.VC = new ArrayList<Integer>() {{ add(0); add(0); add(0); }};
+        this.VC = new ArrayList<Integer>();
         this.MC = new ArrayList<List<Integer>>();
-        this.MC.add(new ArrayList<Integer>());
-        this.MC.add(new ArrayList<Integer>());
-        this.MC.add(new ArrayList<Integer>());
-        this.MC.get(0).add(0);
-        this.MC.get(0).add(0);
-        this.MC.get(0).add(0);
-        this.MC.get(1).add(0);
-        this.MC.get(1).add(0);
-        this.MC.get(1).add(0);
-        this.MC.get(2).add(0);
-        this.MC.get(2).add(0);
-        this.MC.get(2).add(0);
     }
 
     /**
@@ -105,8 +93,6 @@ public class Client extends Thread implements ICausalMulticast {
 
     /**
      * Manages the causal ordering.
-     *
-     * TODO: (talvez precise sincronizar o acesso ao VC).
      *
      * @param m Message to deliver.
      */
