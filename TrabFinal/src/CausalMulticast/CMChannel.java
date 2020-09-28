@@ -1,14 +1,13 @@
 package CausalMulticast;
 
-import java.util.LinkedList;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.List;
 import java.util.ArrayList;
 import java.util.Scanner;
-import java.util.Queue;
 import java.net.ServerSocket;
 import model.Message;
 import client.Client;
@@ -24,14 +23,14 @@ public class CMChannel extends Thread {
     public Client client;
 
     // fila de mensagens enviadas
-    public Queue<Message> buffer;
+    public List<Message> buffer;
 
     /**
      * 
      */
     public CMChannel(Client client) {
         this.client = client;
-        this.buffer = new LinkedList<Message>();
+        this.buffer = new ArrayList<Message>();
         Thread thread = new Thread(this);
         thread.start();
     }
@@ -85,34 +84,62 @@ public class CMChannel extends Thread {
         }
     }
 
+    public void send(String ip, Message message) throws IOException {
+        Socket s = new Socket(ip, 2020);
+        ObjectOutputStream out = new ObjectOutputStream(s.getOutputStream());
+        out.writeObject(message);
+        System.out.println("[Mensagem enviada]"
+                    + "\nConteúdo: " + message.msg
+                    + "\nOrigem: " + message.sender);
+        s.close();
+    }
+
     public void mcsend(Message msg) throws IOException, UnknownHostException{
         // constroi o timestamp da msg
         msg.VC = new ArrayList<>(this.client.VC);
         // adiciona msg ao buffer
         buffer.add(msg);
-        // multicast
+        // para obter entrada do cliente
         Scanner sc = new Scanner(System.in);
-        for (String ip : this.client.ipAddresses) {
-            System.out.println("Enviar para o usuario " + ip + "?");
-            String in = sc.nextLine();
-            if (in.equals("Sim")) {
-                Socket s = new Socket(ip, 2020);
-                ObjectOutputStream out = new ObjectOutputStream(s.getOutputStream());
-                out.writeObject(msg);
-                System.out.println("[Mensagem enviada]"
-                            + "\nConteúdo: " + msg.msg
-                            + "\nOrigem: " + msg.sender);
-                s.close();
+        String in = "";
+        // enviar alguma mensagem do buffer, se houver
+        if (!buffer.isEmpty()) {
+            System.out.println("Enviar alguma mensagem do buffer? (Se sim, digitar o índex a partir de 0)");
+            in = sc.nextLine();
+            if (Integer.parseInt(in) < buffer.size()) {
+                int bufferIndex = Integer.parseInt(in);
+                System.out.println("Qual o destino da mensagem? (Digitar o índex a partir de 0)");
+                in = sc.nextLine();
+                if (Integer.parseInt(in) < this.client.ipAddresses.size()) {
+                    send(this.client.ipAddresses.get(Integer.parseInt(in)), buffer.get(bufferIndex));
+                }
             }
         }
+        // multicast
+        System.out.println("Enviar para todos?");
+        in = sc.nextLine();
+        Boolean doMulticast = in.equals("Sim");
+        for (String ip : this.client.ipAddresses) {
+            if (doMulticast) {
+                send(ip, msg);
+            } else {
+                System.out.println("Enviar para o usuario " + ip + "?");
+                in = sc.nextLine();
+                if (in.equals("Sim")) {
+                    send(ip, msg);
+                }
+            }
+        }
+        sc.close();
         // atualizar o vetor de relógios
         int hostIndex = this.client.ipAddresses.indexOf(this.client.host);
         this.client.VC.set(hostIndex, this.client.VC.get(hostIndex) + 1);
         // mostra o conteúdo do buffer
-        System.out.print("Conteúdo do buffer:");
+        System.out.print("Conteúdo do buffer: ");
         for (Message message : buffer) {
             System.out.print(message.msg + " | ");
         }
+        System.out.println();
     }
         
 }
