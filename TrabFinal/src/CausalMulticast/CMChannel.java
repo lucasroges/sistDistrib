@@ -15,13 +15,13 @@ import client.Client;
 /**
  *
  * @author Joao Victor Bolsson Marques (jvmarques@inf.ufsm.br)
+ * @author Lucas Roges de Araujo (lraraujo@inf.ufsm.br)
  * @version 2020, Sep 21.
  */
 public class CMChannel extends Thread {
 
     private final Client client;
     private List<Message> buffer;
-    private List<Message> recvBuffer;
 
     /**
      * Creates a communication channel.
@@ -34,11 +34,15 @@ public class CMChannel extends Thread {
         }
         this.client = client;
         this.buffer = new ArrayList<>();
-        this.recvBuffer = new ArrayList<>();
         Thread thread = new Thread(this);
         thread.start();
     }
 
+    /**
+     * Method which outputs a string with synchronization
+     * 
+     * @param string String to output
+     */
     public synchronized void syncOutput(String string) {
         System.out.println(string);
     }
@@ -51,7 +55,6 @@ public class CMChannel extends Thread {
     public void causalOrdering(final Message message) {
         // atrasa entrega
         for (int i = 0; i < this.client.getVC().size(); i++) {
-            //syncOutput(i + " msg: " + message.getVC().get(i) + " | proc: " + this.client.getVC().get(i));
             while (message.getVC().get(i) > this.client.getVC().get(i));
         }
         // atualiza variável de controle
@@ -64,43 +67,8 @@ public class CMChannel extends Thread {
     }
 
     /**
-     * Method to stabilize the given message.
-     *
-     * @param message Given message.
+     * Receive messages and create a thread to manage causal ordering and delivery for each message
      */
-    public void stabilizer(final Message message) {
-        int senderIndex = this.client.getIpAddresses().indexOf(message.getSender());
-        synchronized(this) {
-            this.client.getMC().set(senderIndex, message.getMC());
-        }
-        int hostIndex = this.client.getIpAddresses().indexOf(this.client.getHost());
-        if (hostIndex != senderIndex) {
-            synchronized(this) {
-                this.client.getMC().get(hostIndex).set(senderIndex, this.client.getMC().get(hostIndex).get(senderIndex) + 1);
-            }
-        }
-        // descarte
-        for (int i = 0; i < this.buffer.size(); i++) {
-            Boolean discard = true;
-            for (int j = 0; j < this.client.getIpAddresses().size(); j++) {
-                if (this.buffer.get(i).getVC().get(hostIndex) >= this.client.getMC().get(j).get(hostIndex)) {
-                    discard = false;
-                    break;
-                }
-            }
-            if (discard) {
-                this.buffer.remove(i);
-            }
-
-        }
-        // mostra o conteúdo do buffer de mensagens recebidas
-        String out = "[Buffer]\n";
-        for (Message m : this.buffer) {
-            out = out + "| " + m.getMsg() + " |";
-        }
-        syncOutput(out);
-    }
-
     @Override
     public void run() {
         ServerSocket ss = null;
@@ -122,8 +90,6 @@ public class CMChannel extends Thread {
                     new Thread(() -> {
                         // ordenamento causal
                         causalOrdering(m);
-                        // estabilização
-                        stabilizer(m);
                         // envia para a aplicação tratar a mensagem
                         client.deliver(m);
                     }).start();
@@ -163,7 +129,7 @@ public class CMChannel extends Thread {
         // para obter entrada do cliente
         Scanner sc = new Scanner(System.in);
         String in;
-        // Aguardar outros outputs
+        // aguarda outros outputs
         Thread.sleep(1000);
         // enviar alguma mensagem do buffer, se houver
         if (!buffer.isEmpty()) {
@@ -189,7 +155,6 @@ public class CMChannel extends Thread {
         int hostIndex = this.client.getIpAddresses().indexOf(this.client.getHost());
         // constroi o timestamp da msg (apenas após a resposta do usuário)
         msg.setVC(new ArrayList<>(this.client.getVC()));
-        msg.setMC(new ArrayList<>(this.client.getMC().get(hostIndex)));
         // adiciona msg ao buffer
         buffer.add(msg);
         for (String ip : this.client.getIpAddresses()) {
@@ -205,7 +170,12 @@ public class CMChannel extends Thread {
         }
         // atualizar o vetor de relógios
         this.client.getVC().set(hostIndex, this.client.getVC().get(hostIndex) + 1);
-        this.client.getMC().get(hostIndex).set(hostIndex, this.client.getMC().get(hostIndex).get(hostIndex) + 1);
+        // mostra o conteúdo do buffer de mensagens recebidas
+        String out = "[Buffer]\n";
+        for (Message m : this.buffer) {
+            out = out + "| " + m.getMsg() + " |";
+        }
+        syncOutput(out);
     }
 
 }

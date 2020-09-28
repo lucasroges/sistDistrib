@@ -28,8 +28,10 @@ import CausalMulticast.CMChannel;
 public class Client extends Thread implements ICausalMulticast {
 
     private final String host;
-    // TODO: não está sendo usado, remover
-    private final int port;
+
+    /**
+     * List of ip addresses using the middleware
+     */
     private final List<String> ipAddresses;
 
     private final String ipMulticastAddress = "239.255.0.0";
@@ -42,25 +44,18 @@ public class Client extends Thread implements ICausalMulticast {
     private final List<Integer> VC;
 
     /**
-     * Discarding control.
-     */
-    private final List<List<Integer>> MC;
-
-    /**
      * Creates a client.
      *
      * @param host Client host.
      * @param port Port to send.
      */
-    public Client(final String host, int port) {
+    public Client(final String host) {
         if (host == null) {
             throw new IllegalArgumentException("Client can't be created with null parameters.");
         }
         this.host = host;
-        this.port = port;
         this.ipAddresses = new ArrayList<String>();
         this.VC = new ArrayList<Integer>();
-        this.MC = new ArrayList<List<Integer>>();
     }
 
     /**
@@ -85,14 +80,7 @@ public class Client extends Thread implements ICausalMulticast {
     }
 
     /**
-     * @return The MC list.
-     */
-    public List<List<Integer>> getMC() {
-        return MC;
-    }
-
-    /**
-     * Manages the causal ordering.
+     * Method to treat the message when it is delivered to the application
      *
      * @param m Message to deliver.
      */
@@ -104,15 +92,6 @@ public class Client extends Thread implements ICausalMulticast {
         String out = "[Vetor de relógios]\n";
         for (int i = 0; i < VC.size(); i++) {
             out = out + "| " + VC.get(i) + " |";
-        }
-        channel.syncOutput(out);
-        // mostra a matriz de relógios
-        out = "[Matriz de relógios]\n";
-        for (int i = 0; i < MC.size(); i++) {
-            for (int j = 0; j < MC.get(i).size(); j++) {
-                out = out + "| " + MC.get(i).get(j) + " |";
-            }
-            out = out + "\n";
         }
         channel.syncOutput(out);
     }
@@ -165,8 +144,6 @@ public class Client extends Thread implements ICausalMulticast {
     public void run() {
         this.ipAddresses.add(this.host);
         this.VC.add(0);
-        this.MC.add(new ArrayList<>());
-        this.MC.get(0).add(0);
         MCMessage msg = new MCMessage(MCMessage.TYPE.JOIN, this.host);
         InetAddress group;
         MulticastSocket ms;
@@ -186,22 +163,10 @@ public class Client extends Thread implements ICausalMulticast {
                     this.ipAddresses.add(recv.getClient());
                     msg.setType(MCMessage.TYPE.RET_JOIN);
                     this.VC.add(0);
-                    this.MC.add(new ArrayList<>());
-                    for (int i = 0; i < this.ipAddresses.size(); i++) {
-                        this.MC.get(i).add(0);
-                        this.MC.get(this.MC.size() - 1).add(0);
-                    }
-                    this.MC.get(this.MC.size() - 1).remove(this.MC.get(this.MC.size() - 1).size() - 1);
                     sendObject(ms, msg, group);
                 } else if (recv.getType() == MCMessage.TYPE.RET_JOIN) {
                     this.ipAddresses.add(recv.getClient());
                     this.VC.add(0);
-                    this.MC.add(new ArrayList<>());
-                    for (int i = 0; i < this.ipAddresses.size(); i++) {
-                        this.MC.get(i).add(0);
-                        this.MC.get(this.MC.size() - 1).add(0);
-                    }
-                    this.MC.get(this.MC.size() - 1).remove(this.MC.get(this.MC.size() - 1).size() - 1);
                 }
                 // ordena o vetor pelos ips para auxiliar no controle dos outros vetores de processos
                 java.util.Collections.sort(this.ipAddresses);
@@ -248,9 +213,9 @@ public class Client extends Thread implements ICausalMulticast {
      */
     public static void main(final String[] args) throws IOException, InterruptedException {
         if (args.length > 0) {
-            new Client(args[0], 12345).execute();
+            new Client(args[0]).execute();
         } else {
-            new Client("127.0.0.1", 12345).execute();
+            new Client("127.0.0.1").execute();
         }
     }
 }

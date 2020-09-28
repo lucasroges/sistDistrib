@@ -14,7 +14,6 @@ public class Message implements Serializable {
     private final String sender;
     private final String msg;
     private List<Integer> VC;
-    private List<Integer> MC;
 
     /**
      * Creates a message.
@@ -61,24 +60,6 @@ public class Message implements Serializable {
      */
     public void setVC(final List<Integer> VC) {
         this.VC = VC;
-    }
-
-    /**
-     * Gets the MC list.
-     *
-     * @return The MC list.
-     */
-    public List<Integer> getMC() {
-        return MC;
-    }
-
-    /**
-     * Sets a new list for MC.
-     *
-     * @param MC New list to set.
-     */
-    public void setMC(final List<Integer> MC) {
-        this.MC = MC;
     }
 
 }
