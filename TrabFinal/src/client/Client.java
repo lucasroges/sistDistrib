@@ -28,8 +28,7 @@ import CausalMulticast.CMChannel;
 public class Client extends Thread implements ICausalMulticast {
 
     private final String host;
-    // TODO: não está sendo usado, remover
-    private final int port;
+
     private final List<String> ipAddresses;
 
     private final String ipMulticastAddress = "239.255.0.0";
@@ -58,9 +57,21 @@ public class Client extends Thread implements ICausalMulticast {
         }
         this.host = host;
         this.port = port;
-        this.ipAddresses = new ArrayList<>();
-        this.VC = new ArrayList<>();
-        this.MC = new ArrayList<>();
+        this.ipAddresses = new ArrayList<String>() {{ add("172.31.17.152"); add("172.31.31.12"); add("172.31.19.92"); }};
+        this.VC = new ArrayList<Integer>() {{ add(0); add(0); add(0); }};
+        this.MC = new ArrayList<List<Integer>>();
+        this.MC.add(new ArrayList<Integer>());
+        this.MC.add(new ArrayList<Integer>());
+        this.MC.add(new ArrayList<Integer>());
+        this.MC.get(0).add(0);
+        this.MC.get(0).add(0);
+        this.MC.get(0).add(0);
+        this.MC.get(1).add(0);
+        this.MC.get(1).add(0);
+        this.MC.get(1).add(0);
+        this.MC.get(2).add(0);
+        this.MC.get(2).add(0);
+        this.MC.get(2).add(0);
     }
 
     /**
@@ -100,7 +111,23 @@ public class Client extends Thread implements ICausalMulticast {
      */
     @Override
     public void deliver(final Message m) {
-        System.out.println("[Mensagem recebida]\nConteúdo: " + m.getMsg() + "\nOrigem: " + m.getSender());
+        // conteudo da mensagem
+        //channel.syncOutput("[Mensagem recebida]\nConteúdo: " + m.getMsg());
+        // mostra o vetor de relógios
+        String out = "[Vetor de relógios]\n";
+        for (int i = 0; i < VC.size(); i++) {
+            out = out + "| " + VC.get(i) + " |";
+        }
+        channel.syncOutput(out);
+        // mostra a matriz de relógios
+        out = "[Matriz de relógios]\n";
+        for (int i = 0; i < MC.size(); i++) {
+            for (int j = 0; j < MC.get(i).size(); j++) {
+                out = out + "| " + MC.get(i).get(j) + " |";
+            }
+            out = out + "\n";
+        }
+        channel.syncOutput(out);
     }
 
     /**
@@ -146,7 +173,7 @@ public class Client extends Thread implements ICausalMulticast {
 
     /**
      * Manages the IP list that controls which nodes are running the middleware.
-     */
+     */ /*
     @Override
     public void run() {
         this.ipAddresses.add(this.host);
@@ -202,7 +229,7 @@ public class Client extends Thread implements ICausalMulticast {
         } catch (final IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
-    }
+    } */
 
     /**
      * Execute the client.
@@ -212,11 +239,16 @@ public class Client extends Thread implements ICausalMulticast {
      */
     public void execute() throws IOException, InterruptedException {
         // descobre ips com o middleware
-        Thread thread = new Thread(this);
-        thread.start();
+        //Thread thread = new Thread(this);
+        //thread.start();
         // aguarda a descoberta inicial
         Thread.sleep(5000);
+        String str = "Lista de usuários utilizando o middleware:";
+        for (int i = 0; i < this.ipAddresses.size(); i++) {
+            str = str + "\n" + i + ": " + this.ipAddresses.get(i);
+        }
         this.channel = new CMChannel(this);
+        channel.syncOutput(str);
         int counter = 1;
         while (true) {
             // constroi msg e o timestamp

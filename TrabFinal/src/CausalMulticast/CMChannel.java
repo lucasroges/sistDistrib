@@ -39,6 +39,10 @@ public class CMChannel extends Thread {
         thread.start();
     }
 
+    public synchronized void syncOutput(String string) {
+        System.out.println(string);
+    }
+
     /**
      * Method which implements the causal ordering.
      *
@@ -47,6 +51,7 @@ public class CMChannel extends Thread {
     public void causalOrdering(final Message message) {
         // atrasa entrega
         for (int i = 0; i < this.client.getVC().size(); i++) {
+            //syncOutput(i + " msg: " + message.getVC().get(i) + " | proc: " + this.client.getVC().get(i));
             while (message.getVC().get(i) > this.client.getVC().get(i));
         }
         // atualiza variável de controle
@@ -83,11 +88,11 @@ public class CMChannel extends Thread {
             }
         }
         // mostra o conteúdo do buffer de mensagens recebidas
-        System.out.print("Conteúdo do buffer de mensagens recebidas: ");
+        String out = "[Buffer recebidas]\n";
         for (Message m : this.recvBuffer) {
-            System.out.print(m.getMsg() + " | ");
+            out = out + "| " + m.getMsg() + " |";
         }
-        System.out.println();
+        syncOutput(out);
     }
 
     @Override
@@ -136,8 +141,8 @@ public class CMChannel extends Thread {
         try (Socket s = new Socket(ip, 2020)) {
             ObjectOutputStream out = new ObjectOutputStream(s.getOutputStream());
             out.writeObject(message);
-            System.out.println("[Mensagem enviada]\nConteúdo: " + message.getMsg()
-                    + "\nOrigem: " + message.getSender());
+            //String str = "[Mensagem enviada]\nConteúdo: " + message.getMsg();
+            //syncOutput(str);
         }
     }
 
@@ -155,36 +160,37 @@ public class CMChannel extends Thread {
         // enviar alguma mensagem do buffer, se houver
         if (!buffer.isEmpty()) {
             try {
-                System.out.println("Enviar alguma mensagem do buffer? (Se sim, digitar o índex a partir de 0)");
+                // Aguardar outros outputs
+                Thread.sleep(100);
+                syncOutput("Enviar alguma mensagem do buffer? (Se sim, digitar o índex a partir de 0)");
                 in = sc.nextLine();
                 if (Integer.parseInt(in) < buffer.size()) {
                     int bufferIndex = Integer.parseInt(in);
-                    System.out.println("Qual o destino da mensagem? (Digitar o índex a partir de 0)");
+                    syncOutput("Qual o destino da mensagem? (Digitar o índex a partir de 0)");
                     in = sc.nextLine();
                     if (Integer.parseInt(in) < this.client.getIpAddresses().size()) {
                         send(this.client.getIpAddresses().get(Integer.parseInt(in)), buffer.get(bufferIndex));
                     }
                 }
-            } catch (final NumberFormatException e) {
+            } catch (final NumberFormatException | InterruptedException e) {
                 // ignora e segue, pois não quer enviar mensagem do buffer
             }
-
         }
+        // multicast
+        syncOutput("Enviar para todos? [Sim/Nao]");
+        in = sc.nextLine();
+        Boolean doMulticast = in.equalsIgnoreCase("Sim");
         int hostIndex = this.client.getIpAddresses().indexOf(this.client.getHost());
-        // constroi o timestamp da msg
+        // constroi o timestamp da msg (apenas após a resposta do usuário)
         msg.setVC(new ArrayList<>(this.client.getVC()));
         msg.setMC(new ArrayList<>(this.client.getMC().get(hostIndex)));
         // adiciona msg ao buffer
         buffer.add(msg);
-        // multicast
-        System.out.println("Enviar para todos?");
-        in = sc.nextLine();
-        Boolean doMulticast = in.equalsIgnoreCase("Sim");
         for (String ip : this.client.getIpAddresses()) {
             if (doMulticast) {
                 send(ip, msg);
             } else {
-                System.out.println("Enviar para o usuario " + ip + "? [sim/nao]");
+                syncOutput("Enviar para o usuario " + ip + "? [Sim/Nao]");
                 in = sc.nextLine();
                 if (in.equalsIgnoreCase("sim")) {
                     send(ip, msg);
@@ -195,11 +201,11 @@ public class CMChannel extends Thread {
         this.client.getVC().set(hostIndex, this.client.getVC().get(hostIndex) + 1);
         this.client.getMC().get(hostIndex).set(hostIndex, this.client.getMC().get(hostIndex).get(hostIndex) + 1);
         // mostra o conteúdo do buffer de mensagens enviadas
-        System.out.print("Conteúdo do buffer de envios: ");
+        String str = "[Buffer envios]\n";
         for (Message message : buffer) {
-            System.out.print(message.getMsg() + " | ");
+            str = str + "| " + message.getMsg() + " |";
         }
-        System.out.println();
+        syncOutput(str);
     }
 
 }
