@@ -28,7 +28,8 @@ import CausalMulticast.CMChannel;
 public class Client extends Thread implements ICausalMulticast {
 
     private final String host;
-
+    // TODO: não está sendo usado, remover
+    private final int port;
     private final List<String> ipAddresses;
 
     private final String ipMulticastAddress = "239.255.0.0";
@@ -173,7 +174,7 @@ public class Client extends Thread implements ICausalMulticast {
 
     /**
      * Manages the IP list that controls which nodes are running the middleware.
-     */ /*
+     */
     @Override
     public void run() {
         this.ipAddresses.add(this.host);
@@ -218,18 +219,11 @@ public class Client extends Thread implements ICausalMulticast {
                 }
                 // ordena o vetor pelos ips para auxiliar no controle dos outros vetores de processos
                 java.util.Collections.sort(this.ipAddresses);
-                // realizar modificações nos outros vetores
-                // TODO
-                // mostra a lista atual
-                System.out.println("Lista de usuários utilizando o middleware:");
-                for (int i = 0; i < this.ipAddresses.size(); i++) {
-                    System.out.println(i + ": " + this.ipAddresses.get(i));
-                }
             }
         } catch (final IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
-    } */
+    }
 
     /**
      * Execute the client.
@@ -239,10 +233,10 @@ public class Client extends Thread implements ICausalMulticast {
      */
     public void execute() throws IOException, InterruptedException {
         // descobre ips com o middleware
-        //Thread thread = new Thread(this);
-        //thread.start();
+        Thread thread = new Thread(this);
+        thread.start();
         // aguarda a descoberta inicial
-        Thread.sleep(5000);
+        Thread.sleep(3000);
         String str = "Lista de usuários utilizando o middleware:";
         for (int i = 0; i < this.ipAddresses.size(); i++) {
             str = str + "\n" + i + ": " + this.ipAddresses.get(i);
