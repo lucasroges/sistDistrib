@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Scanner;
 import java.net.ServerSocket;
+import java.lang.NumberFormatException;
 import model.Message;
 import client.Client;
 
@@ -95,26 +96,31 @@ public class CMChannel extends Thread {
     }
 
     public void mcsend(Message msg) throws IOException, UnknownHostException{
-        // constroi o timestamp da msg
-        msg.VC = new ArrayList<>(this.client.VC);
-        // adiciona msg ao buffer
-        buffer.add(msg);
         // para obter entrada do cliente
         Scanner sc = new Scanner(System.in);
         String in = "";
         // enviar alguma mensagem do buffer, se houver
         if (!buffer.isEmpty()) {
-            System.out.println("Enviar alguma mensagem do buffer? (Se sim, digitar o índex a partir de 0)");
-            in = sc.nextLine();
-            if (Integer.parseInt(in) < buffer.size()) {
-                int bufferIndex = Integer.parseInt(in);
-                System.out.println("Qual o destino da mensagem? (Digitar o índex a partir de 0)");
+            try {
+                System.out.println("Enviar alguma mensagem do buffer? (Se sim, digitar o índex a partir de 0)");
                 in = sc.nextLine();
-                if (Integer.parseInt(in) < this.client.ipAddresses.size()) {
-                    send(this.client.ipAddresses.get(Integer.parseInt(in)), buffer.get(bufferIndex));
+                if (Integer.parseInt(in) < buffer.size()) {
+                    int bufferIndex = Integer.parseInt(in);
+                    System.out.println("Qual o destino da mensagem? (Digitar o índex a partir de 0)");
+                    in = sc.nextLine();
+                    if (Integer.parseInt(in) < this.client.ipAddresses.size()) {
+                        send(this.client.ipAddresses.get(Integer.parseInt(in)), buffer.get(bufferIndex));
+                    }
                 }
+            } catch (NumberFormatException e) {
+                // ignora e segue, pois não quer enviar mensagem do buffer
             }
+            
         }
+        // constroi o timestamp da msg
+        msg.VC = new ArrayList<>(this.client.VC);
+        // adiciona msg ao buffer
+        buffer.add(msg);
         // multicast
         System.out.println("Enviar para todos?");
         in = sc.nextLine();
