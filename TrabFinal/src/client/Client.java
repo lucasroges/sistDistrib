@@ -49,7 +49,7 @@ public class Client extends Thread implements ICausalMulticast {
         this.host = host;
         this.port = port;
         this.ipAddresses = new ArrayList<String>();
-        this.VC = new ArrayList<Integer>() {{ add(0); add(0); add(0); }};
+        this.VC = new ArrayList<Integer>();
     }
 
     /**
@@ -124,9 +124,11 @@ public class Client extends Thread implements ICausalMulticast {
                 if (recv.type == MCMessage.TYPE.JOIN) {
                     this.ipAddresses.add(recv.client);
                     msg.type = MCMessage.TYPE.RET_JOIN;
+                    this.VC.add(0);
                     sendObject(ms, msg, group);
                 } else if (recv.type == MCMessage.TYPE.RET_JOIN) {
                     this.ipAddresses.add(recv.client);
+                    this.VC.add(0);
                 }
                 // ordena o vetor pelos ips para auxiliar no controle dos outros vetores de processos
                 java.util.Collections.sort(this.ipAddresses);

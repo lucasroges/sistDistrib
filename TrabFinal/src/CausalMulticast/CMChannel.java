@@ -136,7 +136,6 @@ public class CMChannel extends Thread {
                 }
             }
         }
-        sc.close();
         // atualizar o vetor de relógios
         int hostIndex = this.client.ipAddresses.indexOf(this.client.host);
         this.client.VC.set(hostIndex, this.client.VC.get(hostIndex) + 1);
