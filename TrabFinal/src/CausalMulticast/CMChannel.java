@@ -67,7 +67,6 @@ public class CMChannel extends Thread {
      * @param message Given message.
      */
     public void stabilizer(final Message message) {
-        this.recvBuffer.add(message);
         int senderIndex = this.client.getIpAddresses().indexOf(message.getSender());
         this.client.getMC().set(senderIndex, message.getMC());
         int hostIndex = this.client.getIpAddresses().indexOf(this.client.getHost());
@@ -75,21 +74,22 @@ public class CMChannel extends Thread {
             this.client.getMC().get(hostIndex).set(senderIndex, this.client.getMC().get(hostIndex).get(senderIndex) + 1);
         }
         // descarte
-        for (int i = 0; i < this.recvBuffer.size(); i++) {
-            senderIndex = this.client.getIpAddresses().indexOf(recvBuffer.get(i).getSender());
-            int min = this.client.getMC().get(0).get(senderIndex);
-            for (int j = 1; j < this.client.getIpAddresses().size(); j++) {
-                if (this.client.getMC().get(j).get(senderIndex) < min) {
-                    min = this.client.getMC().get(j).get(senderIndex);
+        for (int i = 0; i < this.buffer.size(); i++) {
+            Boolean discard = true;
+            for (int j = 0; j < this.client.getIpAddresses().size(); j++) {
+                if (this.buffer.get(i).getVC().get(j) > message.getVC().get(j)) {
+                    discard = false;
+                    break;
                 }
             }
-            if (recvBuffer.get(i).getMC().get(senderIndex) <= min) {
-                this.recvBuffer.remove(i);
+            if (discard) {
+                this.buffer.remove(i);
             }
+
         }
         // mostra o conteúdo do buffer de mensagens recebidas
-        String out = "[Buffer recebidas]\n";
-        for (Message m : this.recvBuffer) {
+        String out = "[Buffer]\n";
+        for (Message m : this.buffer) {
             out = out + "| " + m.getMsg() + " |";
         }
         syncOutput(out);
@@ -200,12 +200,6 @@ public class CMChannel extends Thread {
         // atualizar o vetor de relógios
         this.client.getVC().set(hostIndex, this.client.getVC().get(hostIndex) + 1);
         this.client.getMC().get(hostIndex).set(hostIndex, this.client.getMC().get(hostIndex).get(hostIndex) + 1);
-        // mostra o conteúdo do buffer de mensagens enviadas
-        String str = "[Buffer envios]\n";
-        for (Message message : buffer) {
-            str = str + "| " + message.getMsg() + " |";
-        }
-        syncOutput(str);
     }
 
 }
