@@ -124,6 +124,7 @@ public class CMChannel extends Thread {
      * @param msg Message to send.
      * @throws IOException In case of IO exception.
      * @throws UnknownHostException In case of unknown host.
+     * @throws java.lang.InterruptedException In case of interruption during sleep
      */
     public void mcsend(final Message msg) throws IOException, UnknownHostException, InterruptedException {
         // para obter entrada do cliente

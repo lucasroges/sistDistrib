@@ -47,7 +47,6 @@ public class Client extends Thread implements ICausalMulticast {
      * Creates a client.
      *
      * @param host Client host.
-     * @param port Port to send.
      */
     public Client(final String host) {
         if (host == null) {
