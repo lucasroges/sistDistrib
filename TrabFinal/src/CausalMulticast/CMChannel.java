@@ -77,8 +77,8 @@ public class CMChannel extends Thread {
                 this.recvBuffer.remove(i);
             }
         }
-        // mostra o conteúdo do buffer de mensagens enviadas
-        System.out.print("Conteúdo do buffer de envios: ");
+        // mostra o conteúdo do buffer de mensagens recebidas
+        System.out.print("Conteúdo do buffer de recebidas: ");
         for (Message m : this.recvBuffer) {
             System.out.print(m.msg + " | ");
         }
@@ -106,6 +106,8 @@ public class CMChannel extends Thread {
                         public void run() {
                             // ordenamento causal
                             causalOrdering(m);
+                            // estabilização
+                            stabilizer(m);
                             // envia para a aplicação tratar a mensagem
                             client.deliver(m);
                         }

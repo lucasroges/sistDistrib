@@ -170,12 +170,12 @@ public class Client extends Thread implements ICausalMulticast {
      *
      */
     public void execute() throws IOException, InterruptedException {
-        // descober ip
+        // descobre ips com o middleware
         Thread thread = new Thread(this);
         thread.start();
         // aguarda a descoberta inicial
-        Thread.sleep(2500);
-	this.channel = new CMChannel(this);
+        Thread.sleep(5000);
+	    this.channel = new CMChannel(this);
         int counter = 1;
         while(true) {
             // constroi msg e o timestamp
