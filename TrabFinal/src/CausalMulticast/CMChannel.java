@@ -20,16 +20,36 @@ import client.Client;
  */
 public class CMChannel extends Thread {
 
+    // 
     public Client client;
 
     // fila de mensagens enviadas
     public Queue<Message> buffer;
 
+    /**
+     * 
+     */
     public CMChannel(Client client) {
         this.client = client;
         this.buffer = new LinkedList<Message>();
         Thread thread = new Thread(this);
         thread.start();
+    }
+
+    /**
+     * 
+     * @param message
+     */
+    public void causalOrdering(Message message) {
+        // atrasa entrega
+        for(int i = 0; i < this.client.VC.size(); i++) {
+            while(message.VC.get(i) <= this.client.VC.get(i));
+        }
+        // atualiza variável de controle
+        if (this.client.host != message.sender) {
+            int senderIndex = this.client.ipAddresses.indexOf(message.sender);
+            this.client.VC.set(senderIndex, this.client.VC.get(senderIndex) + 1);
+        }
     }
 
     @Override
@@ -51,6 +71,9 @@ public class CMChannel extends Thread {
                     final Message m = (Message) in.readObject();
                     new Thread(new Runnable() {
                         public void run() {
+                            // ordenamento causal
+                            causalOrdering(m);
+                            // envia para a aplicação tratar a mensagem
                             client.deliver(m);
                         }
                     }).start();
@@ -81,6 +104,14 @@ public class CMChannel extends Thread {
                             + "\nOrigem: " + msg.sender);
                 s.close();
             }
+        }
+        // atualizar o vetor de relógios
+        int hostIndex = this.client.ipAddresses.indexOf(this.client.host);
+        this.client.VC.set(hostIndex, this.client.VC.get(hostIndex) + 1);
+        // mostra o conteúdo do buffer
+        System.out.print("Conteúdo do buffer:");
+        for (Message message : buffer) {
+            System.out.print(message.msg + " | ");
         }
     }
         
