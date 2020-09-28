@@ -58,7 +58,7 @@ public class Client extends Thread implements ICausalMulticast {
         }
         this.host = host;
         this.port = port;
-        this.ipAddresses = new ArrayList<String>() {{ add("172.31.17.152"); add("172.31.31.12"); add("172.31.19.92"); }};
+        this.ipAddresses = new ArrayList<String>();
         this.VC = new ArrayList<Integer>();
         this.MC = new ArrayList<List<Integer>>();
     }
