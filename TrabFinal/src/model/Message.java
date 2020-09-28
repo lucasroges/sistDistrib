@@ -9,30 +9,76 @@ import java.util.List;
  * @author Joao Victor Bolsson Marques (jvmarques@inf.ufsm.br)
  * @version 2020, Aug 26.
  */
-
-
 public class Message implements Serializable {
 
-    // sender ip
-    public String sender;
-    
-    // information?
-    public String msg;
-    
-    // VC
-    public List<Integer> VC;
-
-    // MC
-    public List<Integer> MC;
+    private final String sender;
+    private final String msg;
+    private List<Integer> VC;
+    private List<Integer> MC;
 
     /**
      * Creates a message.
      *
-     * @param sender
-     * @param msg
+     * @param sender Sender for this message.
+     * @param msg String message to send.
      */
-    public Message(String sender, String msg) {
+    public Message(final String sender, final String msg) {
         this.sender = sender;
         this.msg = msg;
     }
+
+    /**
+     * Gets the sender.
+     *
+     * @return The sender string.
+     */
+    public String getSender() {
+        return sender;
+    }
+
+    /**
+     * Gets the message.
+     *
+     * @return The message string.
+     */
+    public String getMsg() {
+        return msg;
+    }
+
+    /**
+     * Gets the VC list.
+     *
+     * @return The VC list.
+     */
+    public List<Integer> getVC() {
+        return VC;
+    }
+
+    /**
+     * Sets a new list for VC.
+     *
+     * @param VC New list to set.
+     */
+    public void setVC(final List<Integer> VC) {
+        this.VC = VC;
+    }
+
+    /**
+     * Gets the MC list.
+     *
+     * @return The MC list.
+     */
+    public List<Integer> getMC() {
+        return MC;
+    }
+
+    /**
+     * Sets a new list for MC.
+     *
+     * @param MC New list to set.
+     */
+    public void setMC(final List<Integer> MC) {
+        this.MC = MC;
+    }
+
 }

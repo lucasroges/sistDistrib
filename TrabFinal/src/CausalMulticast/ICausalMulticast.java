@@ -9,6 +9,11 @@ import model.Message;
  */
 public interface ICausalMulticast {
 
+    /**
+     * Method to deliver a message.
+     *
+     * @param msg Message to deliver.
+     */
     void deliver(Message msg);
 
 }

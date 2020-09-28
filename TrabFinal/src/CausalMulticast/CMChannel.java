@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Scanner;
 import java.net.ServerSocket;
-import java.lang.NumberFormatException;
 import model.Message;
 import client.Client;
 
@@ -20,67 +19,73 @@ import client.Client;
  */
 public class CMChannel extends Thread {
 
-    // 
-    public Client client;
-
-    // lista de mensagens enviadas
-    public List<Message> buffer;
-
-    // lista de mensagens recebidas
-    public List<Message> recvBuffer;
+    private final Client client;
+    private List<Message> buffer;
+    private List<Message> recvBuffer;
 
     /**
-     * 
+     * Creates a communication channel.
+     *
+     * @param client Client to manage.
      */
-    public CMChannel(Client client) {
+    public CMChannel(final Client client) {
+        if (client == null) {
+            throw new IllegalArgumentException("CMChannel can't be created with invalid client.");
+        }
         this.client = client;
-        this.buffer = new ArrayList<Message>();
-        this.recvBuffer = new ArrayList<Message>();
+        this.buffer = new ArrayList<>();
+        this.recvBuffer = new ArrayList<>();
         Thread thread = new Thread(this);
         thread.start();
     }
 
     /**
-     * 
-     * @param message
+     * Method which implements the causal ordering.
+     *
+     * @param message Message to treat.
      */
-    public void causalOrdering(Message message) {
+    public void causalOrdering(final Message message) {
         // atrasa entrega
-        for(int i = 0; i < this.client.VC.size(); i++) {
-            while(message.VC.get(i) > this.client.VC.get(i));
+        for (int i = 0; i < this.client.getVC().size(); i++) {
+            while (message.getVC().get(i) > this.client.getVC().get(i));
         }
         // atualiza variável de controle
-        if (this.client.host != message.sender) {
-            int senderIndex = this.client.ipAddresses.indexOf(message.sender);
-            this.client.VC.set(senderIndex, this.client.VC.get(senderIndex) + 1);
+        if (!this.client.getHost().equals(message.getSender())) {
+            int senderIndex = this.client.getIpAddresses().indexOf(message.getSender());
+            this.client.getVC().set(senderIndex, this.client.getVC().get(senderIndex) + 1);
         }
     }
 
-    public void stabilizer(Message message) {
+    /**
+     * Method to stabilize the given message.
+     *
+     * @param message Given message.
+     */
+    public void stabilizer(final Message message) {
         this.recvBuffer.add(message);
-        int senderIndex = this.client.ipAddresses.indexOf(message.sender);
-        this.client.MC.set(senderIndex, message.MC);
-        int hostIndex = this.client.ipAddresses.indexOf(this.client.host);
+        int senderIndex = this.client.getIpAddresses().indexOf(message.getSender());
+        this.client.getMC().set(senderIndex, message.getMC());
+        int hostIndex = this.client.getIpAddresses().indexOf(this.client.getHost());
         if (hostIndex != senderIndex) {
-            this.client.MC.get(hostIndex).set(senderIndex, this.client.MC.get(hostIndex).get(senderIndex) + 1);
+            this.client.getMC().get(hostIndex).set(senderIndex, this.client.getMC().get(hostIndex).get(senderIndex) + 1);
         }
         // descarte
         for (int i = 0; i < this.recvBuffer.size(); i++) {
-            senderIndex = this.client.ipAddresses.indexOf(recvBuffer.get(i).sender);
-            int min = this.client.MC.get(0).get(senderIndex);
-            for (int j = 1; j < this.client.ipAddresses.size(); j++) {
-                if (this.client.MC.get(j).get(senderIndex) < min) {
-                    min = this.client.MC.get(j).get(senderIndex);
+            senderIndex = this.client.getIpAddresses().indexOf(recvBuffer.get(i).getSender());
+            int min = this.client.getMC().get(0).get(senderIndex);
+            for (int j = 1; j < this.client.getIpAddresses().size(); j++) {
+                if (this.client.getMC().get(j).get(senderIndex) < min) {
+                    min = this.client.getMC().get(j).get(senderIndex);
                 }
             }
-            if (recvBuffer.get(i).MC.get(senderIndex) <= min) {
+            if (recvBuffer.get(i).getMC().get(senderIndex) <= min) {
                 this.recvBuffer.remove(i);
             }
         }
         // mostra o conteúdo do buffer de mensagens recebidas
-        System.out.print("Conteúdo do buffer de recebidas: ");
+        System.out.print("Conteúdo do buffer de mensagens recebidas: ");
         for (Message m : this.recvBuffer) {
-            System.out.print(m.msg + " | ");
+            System.out.print(m.getMsg() + " | ");
         }
         System.out.println();
     }
@@ -91,49 +96,62 @@ public class CMChannel extends Thread {
         try {
             // cria um server socket na porta 2020 para receber conexões
             ss = new ServerSocket(2020);
-        } catch (IOException e) {
+        } catch (final IOException e) {
             e.printStackTrace();
         }
 
-        while(true) {
-            Socket s = null;
-            try {
+        if (ss != null) {
+            while (true) {
+                Socket s;
+                try {
                     // escuta por conexões e as recebe
                     s = ss.accept();
                     ObjectInputStream in = new ObjectInputStream(s.getInputStream());
                     final Message m = (Message) in.readObject();
-                    new Thread(new Runnable() {
-                        public void run() {
-                            // ordenamento causal
-                            causalOrdering(m);
-                            // estabilização
-                            stabilizer(m);
-                            // envia para a aplicação tratar a mensagem
-                            client.deliver(m);
-                        }
+                    new Thread(() -> {
+                        // ordenamento causal
+                        causalOrdering(m);
+                        // estabilização
+                        stabilizer(m);
+                        // envia para a aplicação tratar a mensagem
+                        client.deliver(m);
                     }).start();
                     // fecha o socket
                     s.close();
-            } catch (IOException | ClassNotFoundException e) {
+                } catch (final IOException | ClassNotFoundException e) {
                     e.printStackTrace();
-            }  
+                }
+            }
         }
     }
 
-    public void send(String ip, Message message) throws IOException {
-        Socket s = new Socket(ip, 2020);
-        ObjectOutputStream out = new ObjectOutputStream(s.getOutputStream());
-        out.writeObject(message);
-        System.out.println("[Mensagem enviada]"
-                    + "\nConteúdo: " + message.msg
-                    + "\nOrigem: " + message.sender);
-        s.close();
+    /**
+     * Send a message to the given IP address.
+     *
+     * @param ip Given IP address to send the message.
+     * @param message Message to send.
+     * @throws IOException In case of IO exception.
+     */
+    public void send(final String ip, final Message message) throws IOException {
+        try (Socket s = new Socket(ip, 2020)) {
+            ObjectOutputStream out = new ObjectOutputStream(s.getOutputStream());
+            out.writeObject(message);
+            System.out.println("[Mensagem enviada]\nConteúdo: " + message.getMsg()
+                    + "\nOrigem: " + message.getSender());
+        }
     }
 
-    public void mcsend(Message msg) throws IOException, UnknownHostException{
+    /**
+     * Method to send a message.
+     *
+     * @param msg Message to send.
+     * @throws IOException In case of IO exception.
+     * @throws UnknownHostException In case of unknown host.
+     */
+    public void mcsend(final Message msg) throws IOException, UnknownHostException {
         // para obter entrada do cliente
         Scanner sc = new Scanner(System.in);
-        String in = "";
+        String in;
         // enviar alguma mensagem do buffer, se houver
         if (!buffer.isEmpty()) {
             try {
@@ -143,45 +161,45 @@ public class CMChannel extends Thread {
                     int bufferIndex = Integer.parseInt(in);
                     System.out.println("Qual o destino da mensagem? (Digitar o índex a partir de 0)");
                     in = sc.nextLine();
-                    if (Integer.parseInt(in) < this.client.ipAddresses.size()) {
-                        send(this.client.ipAddresses.get(Integer.parseInt(in)), buffer.get(bufferIndex));
+                    if (Integer.parseInt(in) < this.client.getIpAddresses().size()) {
+                        send(this.client.getIpAddresses().get(Integer.parseInt(in)), buffer.get(bufferIndex));
                     }
                 }
-            } catch (NumberFormatException e) {
+            } catch (final NumberFormatException e) {
                 // ignora e segue, pois não quer enviar mensagem do buffer
             }
-            
+
         }
-        int hostIndex = this.client.ipAddresses.indexOf(this.client.host);
+        int hostIndex = this.client.getIpAddresses().indexOf(this.client.getHost());
         // constroi o timestamp da msg
-        msg.VC = new ArrayList<>(this.client.VC);
-        msg.MC = new ArrayList<>(this.client.MC.get(hostIndex));
+        msg.setVC(new ArrayList<>(this.client.getVC()));
+        msg.setMC(new ArrayList<>(this.client.getMC().get(hostIndex)));
         // adiciona msg ao buffer
         buffer.add(msg);
         // multicast
         System.out.println("Enviar para todos?");
         in = sc.nextLine();
-        Boolean doMulticast = in.equals("Sim");
-        for (String ip : this.client.ipAddresses) {
+        Boolean doMulticast = in.equalsIgnoreCase("Sim");
+        for (String ip : this.client.getIpAddresses()) {
             if (doMulticast) {
                 send(ip, msg);
             } else {
-                System.out.println("Enviar para o usuario " + ip + "?");
+                System.out.println("Enviar para o usuario " + ip + "? [sim/nao]");
                 in = sc.nextLine();
-                if (in.equals("Sim")) {
+                if (in.equalsIgnoreCase("sim")) {
                     send(ip, msg);
                 }
             }
         }
         // atualizar o vetor de relógios
-        this.client.VC.set(hostIndex, this.client.VC.get(hostIndex) + 1);
-        this.client.MC.get(hostIndex).set(hostIndex, this.client.MC.get(hostIndex).get(hostIndex) + 1);
+        this.client.getVC().set(hostIndex, this.client.getVC().get(hostIndex) + 1);
+        this.client.getMC().get(hostIndex).set(hostIndex, this.client.getMC().get(hostIndex).get(hostIndex) + 1);
         // mostra o conteúdo do buffer de mensagens enviadas
         System.out.print("Conteúdo do buffer de envios: ");
         for (Message message : buffer) {
-            System.out.print(message.msg + " | ");
+            System.out.print(message.getMsg() + " | ");
         }
         System.out.println();
     }
-        
+
 }

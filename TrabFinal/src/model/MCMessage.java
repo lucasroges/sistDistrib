@@ -10,16 +10,21 @@ import java.io.Serializable;
  */
 public class MCMessage implements Serializable {
 
-    /**
-     * Types: JOIN, RET_JOIN
-     */
-    public TYPE type;
+    private TYPE type;
+    private String client;
 
     /**
      * Messages types allowed.
      */
     public enum TYPE {
-        JOIN("JOIN"), RET_JOIN("RET_JOIN");
+        /**
+         * Type to JOIN in a group.
+         */
+        JOIN("JOIN"),
+        /**
+         * Type for response a JOIN message.
+         */
+        RET_JOIN("RET_JOIN");
 
         private final String key;
 
@@ -33,16 +38,14 @@ public class MCMessage implements Serializable {
         }
 
     }
-    
-    public String client;
 
     /**
      * Creates a message.
      *
      * @param type Message type.
-     * @param value Message value.
+     * @param client Client host.
      */
-    public MCMessage(final TYPE type, String client) {
+    public MCMessage(final TYPE type, final String client) {
         this.type = type;
         this.client = client;
     }
@@ -64,16 +67,16 @@ public class MCMessage implements Serializable {
     }
 
     /**
-     * Sets the value.
+     * Sets a new client.
      *
-     * @param n Value to set.
+     * @param client Client to set.
      */
-    public void setClient(String client) {
+    public void setClient(final String client) {
         this.client = client;
     }
 
     /**
-     * @return The message value.
+     * @return The message client.
      */
     public String getClient() {
         return client;

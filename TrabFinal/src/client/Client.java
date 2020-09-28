@@ -27,20 +27,24 @@ import CausalMulticast.CMChannel;
  */
 public class Client extends Thread implements ICausalMulticast {
 
-    public final String host;
-    public final int port;
-    public  List<String> ipAddresses;
+    private final String host;
+    // TODO: não está sendo usado, remover
+    private final int port;
+    private final List<String> ipAddresses;
 
     private final String ipMulticastAddress = "239.255.0.0";
 
-    // 
     private CMChannel channel;
-    
-    // controle de ordenacao
-    public List<Integer> VC;
 
-    // controle de descarte
-    public List<List<Integer>> MC;
+    /**
+     * Ordering control.
+     */
+    private final List<Integer> VC;
+
+    /**
+     * Discarding control.
+     */
+    private final List<List<Integer>> MC;
 
     /**
      * Creates a client.
@@ -49,101 +53,136 @@ public class Client extends Thread implements ICausalMulticast {
      * @param port Port to send.
      */
     public Client(final String host, int port) {
+        if (host == null) {
+            throw new IllegalArgumentException("Client can't be created with null parameters.");
+        }
         this.host = host;
         this.port = port;
-        this.ipAddresses = new ArrayList<String>();
-        this.VC = new ArrayList<Integer>();
-        this.MC = new ArrayList<List<Integer>>();
+        this.ipAddresses = new ArrayList<>();
+        this.VC = new ArrayList<>();
+        this.MC = new ArrayList<>();
     }
 
     /**
-     * Gerencia ordenamento causal (talvez precise sincronizar o acesso ao VC)
+     * @return The host name.
+     */
+    public String getHost() {
+        return host;
+    }
+
+    /**
+     * @return A list with the IP addresses.
+     */
+    public List<String> getIpAddresses() {
+        return ipAddresses;
+    }
+
+    /**
+     * @return The VC list.
+     */
+    public List<Integer> getVC() {
+        return VC;
+    }
+
+    /**
+     * @return The MC list.
+     */
+    public List<List<Integer>> getMC() {
+        return MC;
+    }
+
+    /**
+     * Manages the causal ordering.
+     *
+     * TODO: (talvez precise sincronizar o acesso ao VC).
+     *
+     * @param m Message to deliver.
      */
     @Override
-    public void deliver(Message m) {
-        System.out.println("[Mensagem recebida]"
-                        + "\nConteúdo: " + m.msg
-                        + "\nOrigem: " + m.sender);
+    public void deliver(final Message m) {
+        System.out.println("[Mensagem recebida]\nConteúdo: " + m.getMsg() + "\nOrigem: " + m.getSender());
     }
 
     /**
      * Serialize object and send it as a byte array with IP multicast
-     * 
-     * @param ms Socket multicast
-     * @param msg Object to send
-     * @param group IP Address chosen to perform IP multicast operation
-     * @throws UnknownHostException
-     * @throws IOException 
+     *
+     * @param ms Socket multicast.
+     * @param msg Object to send.
+     * @param group IP Address chosen to perform IP multicast operation.
+     * @throws UnknownHostException In case of unknown host.
+     * @throws IOException In case of IO exception.
      */
-    public void sendObject(MulticastSocket ms, MCMessage msg, InetAddress group) throws UnknownHostException, IOException {
+    public void sendObject(final MulticastSocket ms, final MCMessage msg, final InetAddress group)
+            throws UnknownHostException, IOException {
         ByteArrayOutputStream bout = new ByteArrayOutputStream(100);
-        ObjectOutputStream out = new ObjectOutputStream(new BufferedOutputStream(bout));
-        out.writeObject(msg);
-        out.flush();
-        byte[] buf = bout.toByteArray();
-        DatagramPacket send = new DatagramPacket(buf, buf.length, group, 6789);
-        ms.send(send);
-        out.close();
+        try (final ObjectOutputStream out = new ObjectOutputStream(new BufferedOutputStream(bout))) {
+            out.writeObject(msg);
+            out.flush();
+            byte[] buf = bout.toByteArray();
+            DatagramPacket send = new DatagramPacket(buf, buf.length, group, 6789);
+            ms.send(send);
+        }
     }
 
     /**
-     * Receive byte array from IP multicast comm. and desserialize it
-     * 
-     * @param ms Socket multicast
-     * @return Desserialized object
-     * @throws IOException
-     * @throws ClassNotFoundException 
+     * Receive byte array from IP multicast command and deserializes it.
+     *
+     * @param ms Socket multicast.
+     * @return Deserialized object.
+     * @throws java.io.IOException In case of IO exception.
+     * @throws ClassNotFoundException In case there is a class not found.
      */
-    public MCMessage recvObject(MulticastSocket ms) throws IOException, ClassNotFoundException {
+    public MCMessage recvObject(final MulticastSocket ms) throws IOException, ClassNotFoundException {
         byte[] recvBuf = new byte[1000];
         DatagramPacket dp = new DatagramPacket(recvBuf, recvBuf.length);
         ms.receive(dp);
         ByteArrayInputStream bin = new ByteArrayInputStream(recvBuf);
-        ObjectInputStream in = new ObjectInputStream(new BufferedInputStream(bin));
-        MCMessage msg = (MCMessage) in.readObject();
-        in.close();
+        MCMessage msg;
+        try (final ObjectInputStream in = new ObjectInputStream(new BufferedInputStream(bin))) {
+            msg = (MCMessage) in.readObject();
+        }
         return msg;
     }
 
     /**
-     * Manages the ip list that controls which nodes are running the middleware
+     * Manages the IP list that controls which nodes are running the middleware.
      */
     @Override
     public void run() {
         this.ipAddresses.add(this.host);
         this.VC.add(0);
-        this.MC.add(new ArrayList<Integer>());
+        this.MC.add(new ArrayList<>());
         this.MC.get(0).add(0);
         MCMessage msg = new MCMessage(MCMessage.TYPE.JOIN, this.host);
-        InetAddress group = null;
-        MulticastSocket ms = null;
+        InetAddress group;
+        MulticastSocket ms;
         try {
             group = InetAddress.getByName(this.ipMulticastAddress);
             ms = new MulticastSocket(6789);
             ms.joinGroup(group);
             sendObject(ms, msg, group);
-            while(true) {
+            while (true) {
                 MCMessage recv = recvObject(ms);
                 // verifica se o ip já está na lista, se tiver ignora a mensagem
-                if (this.ipAddresses.contains(recv.client)) {
+                if (this.ipAddresses.contains(recv.getClient())) {
                     continue;
                 }
                 // tratamento de acordo com o tipo de mensagem
-                if (recv.type == MCMessage.TYPE.JOIN) {
-                    this.ipAddresses.add(recv.client);
-                    msg.type = MCMessage.TYPE.RET_JOIN;
+                if (recv.getType() == MCMessage.TYPE.JOIN) {
+                    this.ipAddresses.add(recv.getClient());
+                    msg.setType(MCMessage.TYPE.RET_JOIN);
                     this.VC.add(0);
-                    this.MC.add(new ArrayList<Integer>());
+                    this.MC.add(new ArrayList<>());
                     for (int i = 0; i < this.ipAddresses.size(); i++) {
                         this.MC.get(i).add(0);
                         this.MC.get(this.MC.size() - 1).add(0);
                     }
                     this.MC.get(this.MC.size() - 1).remove(this.MC.get(this.MC.size() - 1).size() - 1);
                     sendObject(ms, msg, group);
-                } else if (recv.type == MCMessage.TYPE.RET_JOIN) {
-                    this.ipAddresses.add(recv.client);
+                } else if (recv.getType() == MCMessage.TYPE.RET_JOIN) {
+                    this.ipAddresses.add(recv.getClient());
                     this.VC.add(0);
-                    this.MC.add(new ArrayList<Integer>());
+                    this.MC.add(new ArrayList<>());
                     for (int i = 0; i < this.ipAddresses.size(); i++) {
                         this.MC.get(i).add(0);
                         this.MC.get(this.MC.size() - 1).add(0);
@@ -155,19 +194,21 @@ public class Client extends Thread implements ICausalMulticast {
                 // realizar modificações nos outros vetores
                 // TODO
                 // mostra a lista atual
-		System.out.println("Lista de usuários utilizando o middleware:");
-                for(int i = 0; i < this.ipAddresses.size(); i++) {
+                System.out.println("Lista de usuários utilizando o middleware:");
+                for (int i = 0; i < this.ipAddresses.size(); i++) {
                     System.out.println(i + ": " + this.ipAddresses.get(i));
                 }
             }
-        } catch (IOException | ClassNotFoundException e) {
-                e.printStackTrace();
+        } catch (final IOException | ClassNotFoundException e) {
+            e.printStackTrace();
         }
     }
-    
+
     /**
      * Execute the client.
      *
+     * @throws java.io.IOException In case of IO exception.
+     * @throws java.lang.InterruptedException In case of thread interrupted.
      */
     public void execute() throws IOException, InterruptedException {
         // descobre ips com o middleware
@@ -175,9 +216,9 @@ public class Client extends Thread implements ICausalMulticast {
         thread.start();
         // aguarda a descoberta inicial
         Thread.sleep(5000);
-	    this.channel = new CMChannel(this);
+        this.channel = new CMChannel(this);
         int counter = 1;
-        while(true) {
+        while (true) {
             // constroi msg e o timestamp
             Message msg = new Message(this.host, "M" + counter + " " + this.host);
             this.channel.mcsend(msg);
@@ -191,6 +232,7 @@ public class Client extends Thread implements ICausalMulticast {
      *
      * @param args Command line arguments.
      * @throws java.io.IOException In case of IO error.
+     * @throws java.lang.InterruptedException In case of thread interrupted.
      */
     public static void main(final String[] args) throws IOException, InterruptedException {
         if (args.length > 0) {
