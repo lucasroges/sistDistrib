@@ -57,7 +57,9 @@ public class CMChannel extends Thread {
         // atualiza variável de controle
         if (!this.client.getHost().equals(message.getSender())) {
             int senderIndex = this.client.getIpAddresses().indexOf(message.getSender());
-            this.client.getVC().set(senderIndex, this.client.getVC().get(senderIndex) + 1);
+            synchronized(this) {
+                this.client.getVC().set(senderIndex, this.client.getVC().get(senderIndex) + 1);
+            }
         }
     }
 
@@ -68,16 +70,20 @@ public class CMChannel extends Thread {
      */
     public void stabilizer(final Message message) {
         int senderIndex = this.client.getIpAddresses().indexOf(message.getSender());
-        this.client.getMC().set(senderIndex, message.getMC());
+        synchronized(this) {
+            this.client.getMC().set(senderIndex, message.getMC());
+        }
         int hostIndex = this.client.getIpAddresses().indexOf(this.client.getHost());
         if (hostIndex != senderIndex) {
-            this.client.getMC().get(hostIndex).set(senderIndex, this.client.getMC().get(hostIndex).get(senderIndex) + 1);
+            synchronized(this) {
+                this.client.getMC().get(hostIndex).set(senderIndex, this.client.getMC().get(hostIndex).get(senderIndex) + 1);
+            }
         }
         // descarte
         for (int i = 0; i < this.buffer.size(); i++) {
             Boolean discard = true;
             for (int j = 0; j < this.client.getIpAddresses().size(); j++) {
-                if (this.buffer.get(i).getVC().get(j) < this.client.getMC().get(j).get(hostIndex)) {
+                if (this.buffer.get(i).getVC().get(hostIndex) >= this.client.getMC().get(j).get(hostIndex)) {
                     discard = false;
                     break;
                 }
