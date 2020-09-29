@@ -17,6 +17,7 @@ import model.MCMessage;
 import model.Message;
 import CausalMulticast.ICausalMulticast;
 import CausalMulticast.CMChannel;
+import java.util.Scanner;
 
 /**
  * Client implementation.
@@ -214,7 +215,11 @@ public class Client extends Thread implements ICausalMulticast {
         if (args.length > 0) {
             new Client(args[0]).execute();
         } else {
-            new Client("127.0.0.1").execute();
+//            new Client("127.0.0.1").execute();
+            Scanner sc = new Scanner(System.in);
+            String in;
+            in = sc.nextLine();
+            new Client(in).execute();
         }
     }
 }

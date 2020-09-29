@@ -22,6 +22,8 @@ public class CMChannel extends Thread {
 
     private final Client client;
     private List<Message> buffer;
+    
+    Boolean isBlocked;
 
     /**
      * Creates a communication channel.
@@ -34,6 +36,7 @@ public class CMChannel extends Thread {
         }
         this.client = client;
         this.buffer = new ArrayList<>();
+        this.isBlocked = false;
         Thread thread = new Thread(this);
         thread.start();
     }
@@ -55,7 +58,9 @@ public class CMChannel extends Thread {
     public void causalOrdering(final Message message) {
         // atrasa entrega
         for (int i = 0; i < this.client.getVC().size(); i++) {
+            this.isBlocked = true;
             while (message.getVC().get(i) > this.client.getVC().get(i));
+            this.isBlocked = false;
         }
         // atualiza variável de controle
         if (!this.client.getHost().equals(message.getSender())) {
@@ -132,51 +137,54 @@ public class CMChannel extends Thread {
         String in;
         // aguarda outros outputs
         Thread.sleep(1000);
-        // enviar alguma mensagem do buffer, se houver
-        if (!buffer.isEmpty()) {
-            try {
-                syncOutput("Enviar alguma mensagem do buffer? (Se sim, digitar o índex a partir de 0)");
-                in = sc.nextLine();
-                if (Integer.parseInt(in) < buffer.size()) {
-                    int bufferIndex = Integer.parseInt(in);
-                    syncOutput("Qual o destino da mensagem? (Digitar o índex a partir de 0)");
+        if (!this.isBlocked) {
+            // enviar alguma mensagem do buffer, se houver
+            if (!buffer.isEmpty()) {
+                try {
+                    syncOutput("Enviar alguma mensagem do buffer? (Se sim, digitar o índex a partir de 0)");
                     in = sc.nextLine();
-                    if (Integer.parseInt(in) < this.client.getIpAddresses().size()) {
-                        send(this.client.getIpAddresses().get(Integer.parseInt(in)), buffer.get(bufferIndex));
+                    if (Integer.parseInt(in) < buffer.size()) {
+                        int bufferIndex = Integer.parseInt(in);
+                        syncOutput("Qual o destino da mensagem? (Digitar o índex a partir de 0)");
+                        in = sc.nextLine();
+                        if (Integer.parseInt(in) < this.client.getIpAddresses().size()) {
+                            send(this.client.getIpAddresses().get(Integer.parseInt(in)), buffer.get(bufferIndex));
+                        }
+                    }
+                } catch (final NumberFormatException e) {
+                    // ignora e segue, pois não quer enviar mensagem do buffer
+                }
+            }
+            // multicast
+            syncOutput("Enviar para todos? [Sim/Nao]");
+            in = sc.nextLine();
+            Boolean doMulticast = in.equalsIgnoreCase("Sim");
+            int hostIndex = this.client.getIpAddresses().indexOf(this.client.getHost());
+            // constroi o timestamp da msg (apenas após a resposta do usuário)
+            msg.setVC(new ArrayList<>(this.client.getVC()));
+            // adiciona msg ao buffer
+            buffer.add(msg);
+            for (String ip : this.client.getIpAddresses()) {
+                if (doMulticast) {
+                    send(ip, msg);
+                } else {
+                    syncOutput("Enviar para o usuario " + ip + "? [Sim/Nao]");
+                    in = sc.nextLine();
+                    if (in.equalsIgnoreCase("sim")) {
+                        send(ip, msg);
                     }
                 }
-            } catch (final NumberFormatException e) {
-                // ignora e segue, pois não quer enviar mensagem do buffer
             }
-        }
-        // multicast
-        syncOutput("Enviar para todos? [Sim/Nao]");
-        in = sc.nextLine();
-        Boolean doMulticast = in.equalsIgnoreCase("Sim");
-        int hostIndex = this.client.getIpAddresses().indexOf(this.client.getHost());
-        // constroi o timestamp da msg (apenas após a resposta do usuário)
-        msg.setVC(new ArrayList<>(this.client.getVC()));
-        // adiciona msg ao buffer
-        buffer.add(msg);
-        for (String ip : this.client.getIpAddresses()) {
-            if (doMulticast) {
-                send(ip, msg);
-            } else {
-                syncOutput("Enviar para o usuario " + ip + "? [Sim/Nao]");
-                in = sc.nextLine();
-                if (in.equalsIgnoreCase("sim")) {
-                    send(ip, msg);
-                }
+            // atualizar o vetor de relógios
+            this.client.getVC().set(hostIndex, this.client.getVC().get(hostIndex) + 1);
+            // mostra o conteúdo do buffer de mensagens recebidas
+            String out = "[Buffer]\n";
+            for (Message m : this.buffer) {
+                out = out + "| " + m.getMsg() + " |";
             }
+            syncOutput(out);
         }
-        // atualizar o vetor de relógios
-        this.client.getVC().set(hostIndex, this.client.getVC().get(hostIndex) + 1);
-        // mostra o conteúdo do buffer de mensagens recebidas
-        String out = "[Buffer]\n";
-        for (Message m : this.buffer) {
-            out = out + "| " + m.getMsg() + " |";
-        }
-        syncOutput(out);
+            
     }
 
 }
